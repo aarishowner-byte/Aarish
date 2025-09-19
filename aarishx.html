@@ -1,0 +1,203 @@
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step 1 - Join Channels</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #dfe9f3, #ffffff);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 26px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      padding: 24px;
+      width: 340px;
+      text-align: center;
+    }
+    h2 {
+      margin-top: 0;
+      color: #111;
+      font-size: 20px;
+    }
+    p {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .channels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    /* Last button center me */
+    .channels a:last-child {
+      grid-column: span 2;
+      justify-self: center;
+      width: 60%;
+    }
+    .channel-btn {
+      display: inline-block;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      color: white;
+      background: rgba(0,122,255,0.9);
+      border-radius: 14px;
+      text-align: center;
+      transition: background 0.3s ease;
+      cursor: pointer;
+    }
+    .channel-btn.processing {
+      background: rgba(255,149,0,0.9) !important;
+      cursor: wait;
+    }
+    .channel-btn.joined {
+      background: rgba(52,199,89,0.9) !important;
+      cursor: default;
+    }
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      background: rgba(200,200,200,0.8);
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      border-radius: 16px;
+      cursor: not-allowed;
+      border: none;
+      transition: background 0.3s ease;
+    }
+    .submit-btn.active {
+      background: rgba(0,122,255,0.9);
+      cursor: pointer;
+    }
+    /* Popup style */
+    .popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .popup.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .popup-content {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 20px;
+      padding: 20px;
+      width: 280px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .popup-content h3 {
+      margin: 0 0 10px;
+      color: #111;
+    }
+    .popup-content p {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .popup-content button {
+      padding: 10px 20px;
+      background: rgba(0,122,255,0.9);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Join Telegram Channels</h2>
+    <p>Join all channels to continue</p>
+    <div class="channels">
+      <a href="https://t.me/+RBaWtMQsKXU3MTJl" target="_blank" class="channel-btn" id="btn1">JOINED 1</a>
+      <a href="https://t.me/+RWhDW2lgUcswZmY9" target="_blank" class="channel-btn" id="btn2">JOINED 2</a>
+      <a href="https://t.me/+KUnHYTdaEZllNmE9" target="_blank" class="channel-btn" id="btn3">JOINED 3</a>
+    </div>
+    <button class="submit-btn" id="submitBtn" disabled>Submit Claim</button>
+  </div>
+
+  <!-- Popup -->
+  <div class="popup" id="popup">
+    <div class="popup-content">
+      <h3>Step 1 Complete!</h3>
+      <p>Proceeding to next step...</p>
+      <button onclick="goToStep6()">OK</button>
+    </div>
+  </div>
+
+  <script>
+    let btns = [
+      { el: document.getElementById("btn1"), joined: false },
+      { el: document.getElementById("btn2"), joined: false },
+      { el: document.getElementById("btn3"), joined: false }
+    ];
+    let submitBtn = document.getElementById("submitBtn");
+
+    function markJoined(buttonObj) {
+      let button = buttonObj.el;
+      button.classList.add("processing");
+      button.textContent = "Processing...";
+      setTimeout(() => {
+        button.classList.remove("processing");
+        button.classList.add("joined");
+        button.textContent = "Joined";
+        button.style.pointerEvents = "none";
+        buttonObj.joined = true;
+        checkAllJoined();
+      }, 5000); // 5 sec delay
+    }
+
+    btns.forEach(b => {
+      b.el.addEventListener("click", () => markJoined(b));
+    });
+
+    function checkAllJoined() {
+      if (btns.every(b => b.joined)) {
+        submitBtn.classList.add("active");
+        submitBtn.disabled = false;
+        submitBtn.style.cursor = "pointer";
+      }
+    }
+
+    submitBtn.addEventListener("click", () => {
+      if (btns.every(b => b.joined)) {
+        document.getElementById("popup").classList.add("active");
+      }
+    });
+
+    function goToStep2() {
+      window.location.href = "step6.html"; // next step page
+    }
+  </script>
+</body>
+</html
