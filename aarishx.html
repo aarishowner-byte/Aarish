@@ -1,203 +1,411 @@
- 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step 1 - Join Channels</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(135deg, #dfe9f3, #ffffff);
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 26px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-      padding: 24px;
-      width: 340px;
-      text-align: center;
-    }
-    h2 {
-      margin-top: 0;
-      color: #111;
-      font-size: 20px;
-    }
-    p {
-      color: #555;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-    .channels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    /* Last button center me */
-    .channels a:last-child {
-      grid-column: span 2;
-      justify-self: center;
-      width: 60%;
-    }
-    .channel-btn {
-      display: inline-block;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      color: white;
-      background: rgba(0,122,255,0.9);
-      border-radius: 14px;
-      text-align: center;
-      transition: background 0.3s ease;
-      cursor: pointer;
-    }
-    .channel-btn.processing {
-      background: rgba(255,149,0,0.9) !important;
-      cursor: wait;
-    }
-    .channel-btn.joined {
-      background: rgba(52,199,89,0.9) !important;
-      cursor: default;
-    }
-    .submit-btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      background: rgba(200,200,200,0.8);
-      color: white;
-      font-size: 15px;
-      font-weight: bold;
-      border-radius: 16px;
-      cursor: not-allowed;
-      border: none;
-      transition: background 0.3s ease;
-    }
-    .submit-btn.active {
-      background: rgba(0,122,255,0.9);
-      cursor: pointer;
-    }
-    /* Popup style */
-    .popup {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .popup.active {
-      visibility: visible;
-      opacity: 1;
-    }
-    .popup-content {
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 20px;
-      padding: 20px;
-      width: 280px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-    .popup-content h3 {
-      margin: 0 0 10px;
-      color: #111;
-    }
-    .popup-content p {
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 20px;
-    }
-    .popup-content button {
-      padding: 10px 20px;
-      background: rgba(0,122,255,0.9);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Bhallu Database · User List (Fill Option)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0f1f;
+            font-family: 'Segoe UI', 'Fira Code', monospace;
+            padding: 20px;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        h1 {
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, #facc15, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 4px;
+        }
+        .sub {
+            color: #94a3b8;
+            margin-bottom: 12px;
+            font-size: 0.75rem;
+        }
+        .controls {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 48px;
+            padding: 10px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+        .url-group {
+            flex: 2;
+            min-width: 180px;
+        }
+        .url-group label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            display: block;
+        }
+        input {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 40px;
+            padding: 6px 12px;
+            color: white;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+        .search-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .search-group input {
+            width: 160px;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            font-size: 0.7rem;
+        }
+        .show-data-btn { background: #10b981; }
+        .data-container {
+            background: #0f172a;
+            border: 1px solid #2d3a5e;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .data-header {
+            background: #1e293b;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
+            font-size: 0.7rem;
+        }
+        .stats {
+            color: #facc15;
+        }
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+        .user-list::-webkit-scrollbar { width: 10px; }
+        .user-list::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
+        .user-list::-webkit-scrollbar-thumb { background: #facc15; border-radius: 10px; }
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 16px;
+            border-bottom: 1px solid #1e2a3e;
+            font-size: 0.8rem;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .phone-number {
+            color: #facc15;
+            font-weight: 600;
+            background: rgba(250,204,21,0.1);
+            padding: 4px 10px;
+            border-radius: 40px;
+            cursor: pointer;
+            flex: 2;
+            text-align: left;
+        }
+        .password {
+            color: #94a3b8;
+            background: #1e293b;
+            padding: 4px 10px;
+            border-radius: 40px;
+            cursor: pointer;
+            flex: 2;
+            text-align: left;
+        }
+        .fill-btn {
+            background: #f59e0b;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            color: #0f172a;
+            transition: 0.1s;
+        }
+        .fill-btn:active { transform: scale(0.95); }
+        .user-item.highlight {
+            background: #facc15;
+        }
+        .user-item.highlight .phone-number,
+        .user-item.highlight .password {
+            background: #facc15;
+            color: #0f172a;
+        }
+        .empty, .loading, .error {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+        }
+        .error { color: #ff8888; }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #facc15;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        @media (max-width: 700px) {
+            body { padding: 12px; }
+            .user-item { flex-direction: column; align-items: stretch; }
+            .fill-btn { text-align: center; }
+        }
+    </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Join Telegram Channels</h2>
-    <p>Join all channels to continue</p>
-    <div class="channels">
-      <a href="https://t.me/+RBaWtMQsKXU3MTJl" target="_blank" class="channel-btn" id="btn1">JOINED 1</a>
-      <a href="https://t.me/+RWhDW2lgUcswZmY9" target="_blank" class="channel-btn" id="btn2">JOINED 2</a>
-      <a href="https://t.me/+KUnHYTdaEZllNmE9" target="_blank" class="channel-btn" id="btn3">JOINED 3</a>
+<div class="container">
+    <h1>📂 Bhallu Database · User List (Fill + Copy)</h1>
+    <div class="sub">📞 Tap phone/password to copy | ⬇️ Fill = copy & open Yaarwin</div>
+
+    <div class="controls">
+        <div class="url-group">
+            <label>🔥 Firebase URL</label>
+            <input type="text" id="displayUrl" value="https://bhallu-ki-gaad-default-rtdb.asia-southeast1.firebasedatabase.app/.json" readonly>
+        </div>
+        <div class="search-group">
+            <input type="text" id="searchInput" placeholder="🔍 Find phone/pass">
+            <button id="findBtn">Find</button>
+            <button id="nextBtn">Next</button>
+            <button id="clearBtn">Clear</button>
+            <button id="refreshBtn">Refresh</button>
+            <button id="showDataBtn" class="show-data-btn">📡 Show Data</button>
+        </div>
     </div>
-    <button class="submit-btn" id="submitBtn" disabled>Submit Claim</button>
-  </div>
 
-  <!-- Popup -->
-  <div class="popup" id="popup">
-    <div class="popup-content">
-      <h3>Step 1 Complete!</h3>
-      <p>Proceeding to next step...</p>
-      <button onclick="goToStep6()">OK</button>
+    <div class="data-container">
+        <div class="data-header">
+            <div class="stats" id="statsInfo">📊 Click "Show Data" to load</div>
+            <button id="copyAllBtn" style="background:#475569;">📋 Copy all (phone:pass)</button>
+        </div>
+        <div id="userList" class="user-list">
+            <div class="empty">✨ Press "Show Data"</div>
+        </div>
     </div>
-  </div>
+    <div id="toastMsg" class="toast"></div>
+</div>
 
-  <script>
-    let btns = [
-      { el: document.getElementById("btn1"), joined: false },
-      { el: document.getElementById("btn2"), joined: false },
-      { el: document.getElementById("btn3"), joined: false }
-    ];
-    let submitBtn = document.getElementById("submitBtn");
+<script>
+    const ALPHA_URL = "https://alphaaxriajjc-default-rtdb.asia-southeast1.firebasedatabase.app/.json";
+    let allUsers = [];
+    let matches = [];
+    let matchIndex = -1;
+    let currentSearch = '';
 
-    function markJoined(buttonObj) {
-      let button = buttonObj.el;
-      button.classList.add("processing");
-      button.textContent = "Processing...";
-      setTimeout(() => {
-        button.classList.remove("processing");
-        button.classList.add("joined");
-        button.textContent = "Joined";
-        button.style.pointerEvents = "none";
-        buttonObj.joined = true;
-        checkAllJoined();
-      }, 5000); // 5 sec delay
+    const userListDiv = document.getElementById('userList');
+    const statsSpan = document.getElementById('statsInfo');
+    const searchInput = document.getElementById('searchInput');
+    const findBtn = document.getElementById('findBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const showDataBtn = document.getElementById('showDataBtn');
+    const copyAllBtn = document.getElementById('copyAllBtn');
+    const toast = document.getElementById('toastMsg');
+
+    function showToast(msg, isError = false) {
+        toast.textContent = msg;
+        toast.style.backgroundColor = isError ? '#b91c1c' : '#1e293b';
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2000);
     }
 
-    btns.forEach(b => {
-      b.el.addEventListener("click", () => markJoined(b));
-    });
-
-    function checkAllJoined() {
-      if (btns.every(b => b.joined)) {
-        submitBtn.classList.add("active");
-        submitBtn.disabled = false;
-        submitBtn.style.cursor = "pointer";
-      }
+    async function copyText(text, label) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast(`✅ ${label} copied: ${text.substring(0, 25)}${text.length>25 ? '…' : ''}`);
+        } catch (err) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast(`📋 ${label} copied (fallback)`, false);
+        }
     }
 
-    submitBtn.addEventListener("click", () => {
-      if (btns.every(b => b.joined)) {
-        document.getElementById("popup").classList.add("active");
-      }
-    });
-
-    function goToStep2() {
-      window.location.href = "step6.html"; // next step page
+    function fillAndOpen(phone, password) {
+        // Copy phone and password in "phone\npassword" format
+        const data = `${phone}\n${password}`;
+        copyText(data, 'Credentials (phone+pass)');
+        // Open Yaarwin login page in new tab
+        window.open('https://yaarwin.xyz/#/login', '_blank');
+        showToast('📱 Phone & Password copied! Open login page and paste (Ctrl+V) into the first field. Then manually enter password (if needed).', false);
     }
-  </script>
+
+    function extractUsers(obj, arr) {
+        if (!obj || typeof obj !== 'object') return;
+        if (obj.phone) {
+            let phone = String(obj.phone);
+            let pass = obj.password !== undefined ? String(obj.password) : '(no password)';
+            arr.push({ phone, password: pass });
+        }
+        for (let val of Object.values(obj)) extractUsers(val, arr);
+    }
+
+    async function fetchData() {
+        userListDiv.innerHTML = '<div class="loading">⏳ Fetching...</div>';
+        statsSpan.innerText = '⏳ Loading...';
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 20000);
+            const res = await fetch(ALPHA_URL, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const users = [];
+            extractUsers(data, users);
+            const map = new Map();
+            for (let u of users) map.set(u.phone, u);
+            allUsers = Array.from(map.values()).sort((a,b) => a.phone.localeCompare(b.phone));
+            renderList();
+            statsSpan.innerText = `📞 ${allUsers.length} users loaded — tap to copy / fill`;
+            clearHighlight();
+        } catch (err) {
+            console.error(err);
+            try {
+                const fallbackRes = await fetch(ALPHA_URL);
+                const raw = await fallbackRes.text();
+                userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}<br><br>Raw JSON (first 3000 chars):</div><pre style="margin:12px; padding:12px; background:#1e293b; border-radius:12px; overflow:auto; font-size:0.7rem;">${escapeHtml(raw.substring(0, 3000))}${raw.length>3000 ? '…' : ''}</pre>`;
+            } catch(e2) {
+                userListDiv.innerHTML = `<div class="error">❌ Failed: ${err.message}<br>Check network/CORS.</div>`;
+            }
+            statsSpan.innerText = '❌ Failed';
+            allUsers = [];
+        }
+    }
+
+    function renderList() {
+        if (!allUsers.length) {
+            userListDiv.innerHTML = '<div class="empty">No users. Click "Show Data".</div>';
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < allUsers.length; i++) {
+            const u = allUsers[i];
+            const div = document.createElement('div');
+            div.className = 'user-item';
+            div.setAttribute('data-idx', i);
+            div.innerHTML = `
+                <div class="phone-number" data-phone="${escapeHtml(u.phone)}">📞 ${escapeHtml(u.phone)}</div>
+                <div class="password" data-pass="${escapeHtml(u.password)}">🔑 ${escapeHtml(u.password)}</div>
+                <div class="fill-btn" data-phone="${escapeHtml(u.phone)}" data-pass="${escapeHtml(u.password)}">⬇️ Fill</div>
+            `;
+            div.querySelector('.phone-number').onclick = (e) => { e.stopPropagation(); copyText(u.phone, 'Phone'); };
+            div.querySelector('.password').onclick = (e) => { e.stopPropagation(); copyText(u.password, 'Password'); };
+            div.querySelector('.fill-btn').onclick = (e) => { e.stopPropagation(); fillAndOpen(u.phone, u.password); };
+            frag.appendChild(div);
+        }
+        userListDiv.innerHTML = '';
+        userListDiv.appendChild(frag);
+    }
+
+    function clearHighlight() {
+        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('highlight'));
+        matches = [];
+        matchIndex = -1;
+        currentSearch = '';
+        statsSpan.innerText = `📞 ${allUsers.length} users`;
+    }
+
+    function findAndHighlight() {
+        if (!allUsers.length) { showToast('Load data first (Show Data)', true); return; }
+        const term = searchInput.value.trim();
+        if (!term) { clearHighlight(); return; }
+        if (term === currentSearch && matches.length) { goToNext(); return; }
+        currentSearch = term;
+        const lower = term.toLowerCase();
+        matches = [];
+        for (let i=0; i<allUsers.length; i++) {
+            const u = allUsers[i];
+            if (u.phone.includes(lower) || u.password.toLowerCase().includes(lower)) matches.push(i);
+        }
+        if (!matches.length) { showToast(`No match for "${term}"`, true); clearHighlight(); return; }
+        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('highlight'));
+        for (let idx of matches) {
+            const el = userListDiv.querySelector(`.user-item[data-idx='${idx}']`);
+            if (el) el.classList.add('highlight');
+        }
+        matchIndex = 0;
+        scrollToMatch();
+        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
+    }
+
+    function scrollToMatch() {
+        if (matchIndex < 0 || matchIndex >= matches.length) return;
+        const idx = matches[matchIndex];
+        const target = userListDiv.querySelector(`.user-item[data-idx='${idx}']`);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
+    }
+
+    function goToNext() {
+        if (!matches.length) { if (searchInput.value.trim()) findAndHighlight(); else statsSpan.innerText = `📞 ${allUsers.length} users`; return; }
+        matchIndex = (matchIndex + 1) % matches.length;
+        scrollToMatch();
+    }
+
+    function copyAll() {
+        if (!allUsers.length) { showToast('No data to copy', true); return; }
+        const lines = allUsers.map(u => `${u.phone}:${u.password}`).join('\n');
+        copyText(lines, 'All entries');
+    }
+
+    showDataBtn.addEventListener('click', fetchData);
+    refreshBtn.addEventListener('click', fetchData);
+    findBtn.addEventListener('click', findAndHighlight);
+    nextBtn.addEventListener('click', goToNext);
+    clearBtn.addEventListener('click', () => { searchInput.value = ''; clearHighlight(); });
+    copyAllBtn.addEventListener('click', copyAll);
+    searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') findAndHighlight(); });
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+    }
+</script>
 </body>
-</html
+</html>
