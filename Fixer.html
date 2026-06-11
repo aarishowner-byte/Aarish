@@ -3,27 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Bhallu Database · User List (Tap to Copy)</title>
+    <title>Bhallu Database · Home + Web</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0f1f;
             font-family: 'Segoe UI', 'Fira Code', monospace;
-            padding: 20px;
             color: #e2e8f0;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
+        /* Main Content - scrollable */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
+        .main-content::-webkit-scrollbar-thumb { background: #facc15; border-radius: 10px; }
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             width: 100%;
             margin: 0 auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
         }
         h1 {
             font-size: 1.6rem;
@@ -35,7 +40,7 @@
         }
         .sub {
             color: #94a3b8;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             font-size: 0.75rem;
         }
         .controls {
@@ -48,7 +53,6 @@
             gap: 10px;
             align-items: center;
             margin-bottom: 16px;
-            flex-shrink: 0;
         }
         .url-group {
             flex: 2;
@@ -91,32 +95,23 @@
             background: #0f172a;
             border: 1px solid #2d3a5e;
             border-radius: 24px;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-height: 0;
             overflow: hidden;
+            margin-bottom: 16px;
         }
         .data-header {
             background: #1e293b;
-            padding: 6px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            flex-shrink: 0;
-            font-size: 0.7rem;
+            padding: 8px 16px;
+            border-bottom: 1px solid #334155;
         }
         .stats {
+            font-size: 0.8rem;
             color: #facc15;
         }
         .user-list {
-            flex: 1;
+            max-height: 400px;
             overflow-y: auto;
-            padding: 6px 0;
         }
-        .user-list::-webkit-scrollbar { width: 10px; }
+        .user-list::-webkit-scrollbar { width: 8px; }
         .user-list::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
         .user-list::-webkit-scrollbar-thumb { background: #facc15; border-radius: 10px; }
         .user-item {
@@ -164,7 +159,7 @@
         .error { color: #ff8888; }
         .toast {
             position: fixed;
-            bottom: 30px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: #1e293b;
@@ -177,43 +172,112 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
+        /* Web View */
+        .web-view {
+            display: none;
+            height: calc(100vh - 80px);
+        }
+        .web-view iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 20px;
+            background: #fff;
+        }
+        /* Bottom Menu Bar - APK Style */
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border-top: 1px solid #334155;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 20px;
+            z-index: 100;
+        }
+        .bottom-menu .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #94a3b8;
+            font-size: 0.7rem;
+        }
+        .bottom-menu .menu-item.active {
+            background: #facc15;
+            color: #0f172a;
+        }
+        .bottom-menu .menu-item .icon {
+            font-size: 1.2rem;
+        }
         @media (max-width: 700px) {
-            body { padding: 12px; }
+            .main-content { padding: 12px; padding-bottom: 70px; }
             .user-item { flex-direction: row; gap: 10px; }
             .phone-number, .password { font-size: 0.7rem; }
+            .bottom-menu .menu-item { padding: 4px 12px; }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>📂 Bhallu Database · User List</h1>
-    <div class="sub">Tap phone → copy number | Tap password → copy password (silent)</div>
+    <!-- Main Content Area -->
+    <div class="main-content" id="mainContent">
+        <!-- Home View (Firebase User List) -->
+        <div id="homeView" class="container">
+            <h1>📂 Bhallu Database · User List</h1>
+            <div class="sub">Tap phone → copy number | Tap password → copy password</div>
 
-    <div class="controls">
-        <div class="url-group">
-            <label>🔥 Firebase URL</label>
-            <input type="text" id="displayUrl" value="https://bhallu-ki-gaad-default-rtdb.asia-southeast1.firebasedatabase.app/.json" readonly>
+            <div class="controls">
+                <div class="url-group">
+                    <label>🔥 Firebase URL</label>
+                    <input type="text" id="displayUrl" value="https://bhallu-ki-gaad-default-rtdb.asia-southeast1.firebasedatabase.app/.json" readonly>
+                </div>
+                <div class="search-group">
+                    <input type="text" id="searchInput" placeholder="🔍 Find phone/pass">
+                    <button id="findBtn">Find</button>
+                    <button id="nextBtn">Next</button>
+                    <button id="clearBtn">Clear</button>
+                    <button id="refreshBtn">Refresh</button>
+                    <button id="showDataBtn" class="show-data-btn">📡 Show Data</button>
+                </div>
+            </div>
+
+            <div class="data-container">
+                <div class="data-header">
+                    <div class="stats" id="statsInfo">📊 Click "Show Data" to load</div>
+                </div>
+                <div id="userList" class="user-list">
+                    <div class="empty">✨ Press "Show Data"</div>
+                </div>
+            </div>
         </div>
-        <div class="search-group">
-            <input type="text" id="searchInput" placeholder="🔍 Find phone/pass">
-            <button id="findBtn">Find</button>
-            <button id="nextBtn">Next</button>
-            <button id="clearBtn">Clear</button>
-            <button id="refreshBtn">Refresh</button>
-            <button id="showDataBtn" class="show-data-btn">📡 Show Data</button>
+
+        <!-- Web View (YaarWin iframe) -->
+        <div id="webView" class="web-view">
+            <iframe id="yaarwinFrame" src="https://yaarwin.xyz/#/login" title="YaarWin Login" allow="clipboard-read; clipboard-write"></iframe>
         </div>
     </div>
 
-    <div class="data-container">
-        <div class="data-header">
-            <div class="stats" id="statsInfo">📊 Click "Show Data" to load</div>
-        </div>
-        <div id="userList" class="user-list">
-            <div class="empty">✨ Press "Show Data"</div>
-        </div>
-    </div>
     <div id="toastMsg" class="toast"></div>
-</div>
+
+    <!-- Bottom Menu Bar -->
+    <div class="bottom-menu">
+        <button id="homeMenuBtn" class="menu-item active">
+            <span class="icon">🏠</span>
+            <span>Home</span>
+        </button>
+        <button id="webMenuBtn" class="menu-item">
+            <span class="icon">🌐</span>
+            <span>Web</span>
+        </button>
+    </div>
 
 <script>
     // 🔥 Alpha DB URL (hidden)
@@ -233,6 +297,28 @@
     const refreshBtn = document.getElementById('refreshBtn');
     const showDataBtn = document.getElementById('showDataBtn');
     const toast = document.getElementById('toastMsg');
+    const homeView = document.getElementById('homeView');
+    const webView = document.getElementById('webView');
+    const homeMenuBtn = document.getElementById('homeMenuBtn');
+    const webMenuBtn = document.getElementById('webMenuBtn');
+
+    // Tab switching
+    function showHome() {
+        homeView.style.display = 'block';
+        webView.style.display = 'none';
+        homeMenuBtn.classList.add('active');
+        webMenuBtn.classList.remove('active');
+    }
+
+    function showWeb() {
+        homeView.style.display = 'none';
+        webView.style.display = 'block';
+        webMenuBtn.classList.add('active');
+        homeMenuBtn.classList.remove('active');
+    }
+
+    homeMenuBtn.addEventListener('click', showHome);
+    webMenuBtn.addEventListener('click', showWeb);
 
     function showToast(msg, isError = false) {
         toast.textContent = msg;
@@ -241,20 +327,18 @@
         setTimeout(() => { toast.style.opacity = '0'; }, 1500);
     }
 
-    // Silent copy using clipboard API
     async function copyText(text, label) {
         try {
             await navigator.clipboard.writeText(text);
             showToast(`✅ ${label} copied: ${text.substring(0, 20)}${text.length > 20 ? '…' : ''}`);
         } catch (err) {
-            // Fallback for old WebView: use textarea execCommand (no prompt)
             const textarea = document.createElement('textarea');
             textarea.value = text;
             document.body.appendChild(textarea);
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            showToast(`📋 ${label} copied (manual fallback)`, false);
+            showToast(`📋 ${label} copied`, false);
         }
     }
 
@@ -288,13 +372,7 @@
             clearHighlight();
         } catch (err) {
             console.error(err);
-            try {
-                const fallbackRes = await fetch(ALPHA_URL);
-                const raw = await fallbackRes.text();
-                userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}<br><br>⚠️ Showing raw JSON:</div><pre style="margin:12px; padding:12px; background:#1e293b; border-radius:12px; overflow:auto; font-size:0.7rem;">${escapeHtml(raw.substring(0, 3000))}${raw.length>3000 ? '…' : ''}</pre>`;
-            } catch(e2) {
-                userListDiv.innerHTML = `<div class="error">❌ Failed to load: ${err.message}<br>Check network/CORS.</div>`;
-            }
+            userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}<br>Check network/CORS.</div>`;
             statsSpan.innerText = '❌ Failed';
             allUsers = [];
         }
@@ -312,8 +390,8 @@
             div.className = 'user-item';
             div.setAttribute('data-idx', i);
             div.innerHTML = `
-                <div class="phone-number" data-phone="${escapeHtml(u.phone)}">📞 ${escapeHtml(u.phone)}</div>
-                <div class="password" data-pass="${escapeHtml(u.password)}">🔑 ${escapeHtml(u.password)}</div>
+                <div class="phone-number">📞 ${escapeHtml(u.phone)}</div>
+                <div class="password">🔑 ${escapeHtml(u.password)}</div>
             `;
             div.querySelector('.phone-number').onclick = (e) => {
                 e.stopPropagation();
@@ -366,8 +444,7 @@
 
     function scrollToMatch() {
         if (matchIndex < 0 || matchIndex >= matches.length) return;
-        const idx = matches[matchIndex];
-        const target = userListDiv.querySelector(`.user-item[data-idx='${idx}']`);
+        const target = userListDiv.querySelector(`.user-item[data-idx='${matches[matchIndex]}']`);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         statsSpan.innerText = `🔍 ${matches.length} matches — showing ${matchIndex+1}/${matches.length}`;
     }
@@ -388,6 +465,9 @@
     function escapeHtml(str) {
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
     }
+
+    // Auto-load on page open
+    fetchData();
 </script>
 </body>
 </html>
