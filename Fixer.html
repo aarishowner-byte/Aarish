@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Bhallu Database · User List</title>
+    <title>Bhallu Database · Home + Web (Save Scroll)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -88,10 +88,6 @@
             cursor: pointer;
             color: white;
             font-size: 0.7rem;
-            transition: transform 0.05s linear;
-        }
-        button:active {
-            transform: scale(0.96);
         }
         .show-data-btn { background: #10b981; }
         .data-container {
@@ -110,7 +106,6 @@
             font-size: 0.8rem;
             color: #facc15;
         }
-        /* Linear row - phone left, password right - same as before */
         .user-list {
             max-height: none;
             overflow-y: visible;
@@ -126,7 +121,6 @@
         .user-row:hover {
             background: rgba(250, 204, 21, 0.08);
         }
-        /* Phone number highlight */
         .phone-number {
             color: #facc15;
             font-weight: 600;
@@ -135,7 +129,6 @@
             padding: 4px 12px;
             border-radius: 40px;
         }
-        /* Password highlight */
         .password {
             color: #94a3b8;
             font-size: 0.85rem;
@@ -144,7 +137,6 @@
             padding: 4px 12px;
             border-radius: 40px;
         }
-        /* Search highlight - full row yellow */
         .user-row.highlight {
             background: #facc15;
         }
@@ -226,7 +218,7 @@
     </style>
 </head>
 <body>
-    <div class="main-content">
+    <div class="main-content" id="mainContent">
         <div id="homeView" class="container">
             <h1>📂 Bhallu Database · User List</h1>
             <div class="sub">Tap phone → copy number | Tap password → copy password</div>
@@ -281,6 +273,10 @@
     let matches = [];
     let matchIndex = -1;
     let currentSearch = '';
+    
+    // Save scroll position
+    let savedScrollTop = 0;
+    const mainContent = document.getElementById('mainContent');
 
     const userListDiv = document.getElementById('userList');
     const statsSpan = document.getElementById('statsInfo');
@@ -296,14 +292,31 @@
     const homeMenuBtn = document.getElementById('homeMenuBtn');
     const webMenuBtn = document.getElementById('webMenuBtn');
 
+    // Save scroll before leaving Home
+    function saveScrollPosition() {
+        if (homeView.style.display !== 'none') {
+            savedScrollTop = mainContent.scrollTop;
+        }
+    }
+
+    // Restore scroll when coming back to Home
+    function restoreScrollPosition() {
+        setTimeout(() => {
+            mainContent.scrollTop = savedScrollTop;
+        }, 50);
+    }
+
     homeMenuBtn.addEventListener('click', () => {
+        saveScrollPosition();
         homeView.style.display = 'block';
         webView.style.display = 'none';
         homeMenuBtn.classList.add('active');
         webMenuBtn.classList.remove('active');
+        restoreScrollPosition();
     });
 
     webMenuBtn.addEventListener('click', () => {
+        saveScrollPosition();
         homeView.style.display = 'none';
         webView.style.display = 'block';
         webMenuBtn.classList.add('active');
@@ -358,6 +371,8 @@
             renderList();
             statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
             clearHighlight();
+            // Restore scroll after data loads
+            restoreScrollPosition();
         } catch (err) {
             userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
             statsSpan.innerText = '❌ Failed';
@@ -432,7 +447,11 @@
     function scrollToMatch() {
         if (matchIndex < 0 || matchIndex >= matches.length) return;
         const target = userListDiv.querySelector(`.user-row[data-idx='${matches[matchIndex]}']`);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (target) {
+            const container = mainContent;
+            const targetTop = target.offsetTop - 100;
+            container.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
         statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
     }
 
