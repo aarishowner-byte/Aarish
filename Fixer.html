@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Bhallu Database · Home + Web</title>
+    <title>Bhallu Database · User List</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -15,7 +15,6 @@
             flex-direction: column;
             overflow: hidden;
         }
-        /* Main Content - scrollable */
         .main-content {
             flex: 1;
             overflow-y: auto;
@@ -89,6 +88,10 @@
             cursor: pointer;
             color: white;
             font-size: 0.7rem;
+            transition: transform 0.05s linear;
+        }
+        button:active {
+            transform: scale(0.96);
         }
         .show-data-btn { background: #10b981; }
         .data-container {
@@ -107,47 +110,46 @@
             font-size: 0.8rem;
             color: #facc15;
         }
+        /* Linear row - phone left, password right - same as before */
         .user-list {
-            max-height: 400px;
-            overflow-y: auto;
+            max-height: none;
+            overflow-y: visible;
         }
-        .user-list::-webkit-scrollbar { width: 8px; }
-        .user-list::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
-        .user-list::-webkit-scrollbar-thumb { background: #facc15; border-radius: 10px; }
-        .user-item {
+        .user-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 20px;
+            padding: 10px 20px;
             border-bottom: 1px solid #1e2a3e;
-            font-size: 0.85rem;
-            gap: 20px;
             cursor: pointer;
-            transition: background 0.1s;
         }
+        .user-row:hover {
+            background: rgba(250, 204, 21, 0.08);
+        }
+        /* Phone number highlight */
         .phone-number {
             color: #facc15;
             font-weight: 600;
-            background: rgba(250,204,21,0.1);
+            font-size: 0.85rem;
+            background: rgba(250, 204, 21, 0.1);
             padding: 4px 12px;
             border-radius: 40px;
-            flex: 1;
-            text-align: left;
         }
+        /* Password highlight */
         .password {
             color: #94a3b8;
+            font-size: 0.85rem;
+            font-family: monospace;
             background: #1e293b;
             padding: 4px 12px;
             border-radius: 40px;
-            flex: 1;
-            text-align: right;
-            font-family: monospace;
         }
-        .user-item.highlight {
+        /* Search highlight - full row yellow */
+        .user-row.highlight {
             background: #facc15;
         }
-        .user-item.highlight .phone-number,
-        .user-item.highlight .password {
+        .user-row.highlight .phone-number,
+        .user-row.highlight .password {
             background: #facc15;
             color: #0f172a;
         }
@@ -172,7 +174,6 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
-        /* Web View */
         .web-view {
             display: none;
             height: calc(100vh - 80px);
@@ -184,7 +185,6 @@
             border-radius: 20px;
             background: #fff;
         }
-        /* Bottom Menu Bar - APK Style */
         .bottom-menu {
             position: fixed;
             bottom: 0;
@@ -207,7 +207,6 @@
             padding: 6px 20px;
             border-radius: 40px;
             cursor: pointer;
-            transition: all 0.2s;
             color: #94a3b8;
             font-size: 0.7rem;
         }
@@ -220,16 +219,14 @@
         }
         @media (max-width: 700px) {
             .main-content { padding: 12px; padding-bottom: 70px; }
-            .user-item { flex-direction: row; gap: 10px; }
+            .user-row { flex-direction: row; gap: 10px; }
             .phone-number, .password { font-size: 0.7rem; }
             .bottom-menu .menu-item { padding: 4px 12px; }
         }
     </style>
 </head>
 <body>
-    <!-- Main Content Area -->
-    <div class="main-content" id="mainContent">
-        <!-- Home View (Firebase User List) -->
+    <div class="main-content">
         <div id="homeView" class="container">
             <h1>📂 Bhallu Database · User List</h1>
             <div class="sub">Tap phone → copy number | Tap password → copy password</div>
@@ -259,7 +256,6 @@
             </div>
         </div>
 
-        <!-- Web View (YaarWin iframe) -->
         <div id="webView" class="web-view">
             <iframe id="yaarwinFrame" src="https://yaarwin.xyz/#/login" title="YaarWin Login" allow="clipboard-read; clipboard-write"></iframe>
         </div>
@@ -267,7 +263,6 @@
 
     <div id="toastMsg" class="toast"></div>
 
-    <!-- Bottom Menu Bar -->
     <div class="bottom-menu">
         <button id="homeMenuBtn" class="menu-item active">
             <span class="icon">🏠</span>
@@ -280,7 +275,6 @@
     </div>
 
 <script>
-    // 🔥 Alpha DB URL (hidden)
     const ALPHA_URL = "https://alphaaxriajjc-default-rtdb.asia-southeast1.firebasedatabase.app/.json";
 
     let allUsers = [];
@@ -302,23 +296,19 @@
     const homeMenuBtn = document.getElementById('homeMenuBtn');
     const webMenuBtn = document.getElementById('webMenuBtn');
 
-    // Tab switching
-    function showHome() {
+    homeMenuBtn.addEventListener('click', () => {
         homeView.style.display = 'block';
         webView.style.display = 'none';
         homeMenuBtn.classList.add('active');
         webMenuBtn.classList.remove('active');
-    }
+    });
 
-    function showWeb() {
+    webMenuBtn.addEventListener('click', () => {
         homeView.style.display = 'none';
         webView.style.display = 'block';
         webMenuBtn.classList.add('active');
         homeMenuBtn.classList.remove('active');
-    }
-
-    homeMenuBtn.addEventListener('click', showHome);
-    webMenuBtn.addEventListener('click', showWeb);
+    });
 
     function showToast(msg, isError = false) {
         toast.textContent = msg;
@@ -331,7 +321,7 @@
         try {
             await navigator.clipboard.writeText(text);
             showToast(`✅ ${label} copied: ${text.substring(0, 20)}${text.length > 20 ? '…' : ''}`);
-        } catch (err) {
+        } catch {
             const textarea = document.createElement('textarea');
             textarea.value = text;
             document.body.appendChild(textarea);
@@ -345,15 +335,13 @@
     function extractUsers(obj, arr) {
         if (!obj || typeof obj !== 'object') return;
         if (obj.phone) {
-            let phone = String(obj.phone);
-            let pass = obj.password !== undefined ? String(obj.password) : '(no password)';
-            arr.push({ phone, password: pass });
+            arr.push({ phone: String(obj.phone), password: obj.password !== undefined ? String(obj.password) : '(no password)' });
         }
         for (let val of Object.values(obj)) extractUsers(val, arr);
     }
 
     async function fetchData() {
-        userListDiv.innerHTML = '<div class="loading">⏳ Fetching from Alpha database...</div>';
+        userListDiv.innerHTML = '<div class="loading">⏳ Fetching...</div>';
         statsSpan.innerText = '⏳ Loading...';
         try {
             const controller = new AbortController();
@@ -368,11 +356,10 @@
             for (let u of users) map.set(u.phone, u);
             allUsers = Array.from(map.values()).sort((a,b) => a.phone.localeCompare(b.phone));
             renderList();
-            statsSpan.innerText = `📞 ${allUsers.length} users loaded — tap to copy`;
+            statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
             clearHighlight();
         } catch (err) {
-            console.error(err);
-            userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}<br>Check network/CORS.</div>`;
+            userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
             statsSpan.innerText = '❌ Failed';
             allUsers = [];
         }
@@ -386,29 +373,29 @@
         const frag = document.createDocumentFragment();
         for (let i = 0; i < allUsers.length; i++) {
             const u = allUsers[i];
-            const div = document.createElement('div');
-            div.className = 'user-item';
-            div.setAttribute('data-idx', i);
-            div.innerHTML = `
-                <div class="phone-number">📞 ${escapeHtml(u.phone)}</div>
-                <div class="password">🔑 ${escapeHtml(u.password)}</div>
+            const row = document.createElement('div');
+            row.className = 'user-row';
+            row.setAttribute('data-idx', i);
+            row.innerHTML = `
+                <span class="phone-number">📞 ${escapeHtml(u.phone)}</span>
+                <span class="password">🔑 ${escapeHtml(u.password)}</span>
             `;
-            div.querySelector('.phone-number').onclick = (e) => {
+            row.querySelector('.phone-number').onclick = (e) => {
                 e.stopPropagation();
                 copyText(u.phone, 'Phone');
             };
-            div.querySelector('.password').onclick = (e) => {
+            row.querySelector('.password').onclick = (e) => {
                 e.stopPropagation();
                 copyText(u.password, 'Password');
             };
-            frag.appendChild(div);
+            frag.appendChild(row);
         }
         userListDiv.innerHTML = '';
         userListDiv.appendChild(frag);
     }
 
     function clearHighlight() {
-        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('highlight'));
+        document.querySelectorAll('.user-row').forEach(row => row.classList.remove('highlight'));
         matches = [];
         matchIndex = -1;
         currentSearch = '';
@@ -416,14 +403,14 @@
     }
 
     function findAndHighlight() {
-        if (!allUsers.length) { showToast('Load data first (Show Data)', true); return; }
+        if (!allUsers.length) { showToast('Load data first', true); return; }
         const term = searchInput.value.trim();
         if (!term) { clearHighlight(); return; }
         if (term === currentSearch && matches.length) { goToNext(); return; }
         currentSearch = term;
         const lower = term.toLowerCase();
         matches = [];
-        for (let i=0; i<allUsers.length; i++) {
+        for (let i = 0; i < allUsers.length; i++) {
             const u = allUsers[i];
             if (u.phone.includes(lower) || u.password.toLowerCase().includes(lower)) matches.push(i);
         }
@@ -432,21 +419,21 @@
             clearHighlight();
             return;
         }
-        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('highlight'));
+        document.querySelectorAll('.user-row').forEach(row => row.classList.remove('highlight'));
         for (let idx of matches) {
-            const el = userListDiv.querySelector(`.user-item[data-idx='${idx}']`);
-            if (el) el.classList.add('highlight');
+            const row = userListDiv.querySelector(`.user-row[data-idx='${idx}']`);
+            if (row) row.classList.add('highlight');
         }
         matchIndex = 0;
         scrollToMatch();
-        statsSpan.innerText = `🔍 ${matches.length} matches — showing ${matchIndex+1}/${matches.length}`;
+        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
     }
 
     function scrollToMatch() {
         if (matchIndex < 0 || matchIndex >= matches.length) return;
-        const target = userListDiv.querySelector(`.user-item[data-idx='${matches[matchIndex]}']`);
+        const target = userListDiv.querySelector(`.user-row[data-idx='${matches[matchIndex]}']`);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        statsSpan.innerText = `🔍 ${matches.length} matches — showing ${matchIndex+1}/${matches.length}`;
+        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
     }
 
     function goToNext() {
@@ -466,7 +453,6 @@
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
     }
 
-    // Auto-load on page open
     fetchData();
 </script>
 </body>
