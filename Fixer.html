@@ -207,7 +207,6 @@
     <div class="data-container">
         <div class="data-header">
             <div class="stats" id="statsInfo">📊 Click "Show Data" to load</div>
-            <button id="copyAllBtn" style="background:#475569;">📋 Copy all (phone:pass)</button>
         </div>
         <div id="userList" class="user-list">
             <div class="empty">✨ Press "Show Data"</div>
@@ -233,7 +232,6 @@
     const clearBtn = document.getElementById('clearBtn');
     const refreshBtn = document.getElementById('refreshBtn');
     const showDataBtn = document.getElementById('showDataBtn');
-    const copyAllBtn = document.getElementById('copyAllBtn');
     const toast = document.getElementById('toastMsg');
 
     function showToast(msg, isError = false) {
@@ -380,18 +378,11 @@
         scrollToMatch();
     }
 
-    function copyAll() {
-        if (!allUsers.length) { showToast('No data to copy', true); return; }
-        const lines = allUsers.map(u => `${u.phone}:${u.password}`).join('\n');
-        copyText(lines, 'All entries');
-    }
-
     showDataBtn.addEventListener('click', fetchData);
     refreshBtn.addEventListener('click', fetchData);
     findBtn.addEventListener('click', findAndHighlight);
     nextBtn.addEventListener('click', goToNext);
     clearBtn.addEventListener('click', () => { searchInput.value = ''; clearHighlight(); });
-    copyAllBtn.addEventListener('click', copyAll);
     searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') findAndHighlight(); });
 
     function escapeHtml(str) {
