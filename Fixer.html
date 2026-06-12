@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Bhallu Database · Home + Web (Save Scroll)</title>
+    <title>Bhallu Database · Last Copy Persistent</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -19,7 +19,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            padding-bottom: 80px;
+            padding-bottom: 130px;
         }
         .main-content::-webkit-scrollbar { width: 8px; }
         .main-content::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
@@ -153,7 +153,7 @@
         .error { color: #ff8888; }
         .toast {
             position: fixed;
-            bottom: 80px;
+            bottom: 130px;
             left: 50%;
             transform: translateX(-50%);
             background: #1e293b;
@@ -168,7 +168,7 @@
         }
         .web-view {
             display: none;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 130px);
         }
         .web-view iframe {
             width: 100%;
@@ -176,6 +176,43 @@
             border: none;
             border-radius: 20px;
             background: #fff;
+        }
+        /* Last Copied Panel */
+        .last-copied-panel {
+            position: fixed;
+            bottom: 70px;
+            left: 10px;
+            right: 10px;
+            background: #0f172a;
+            border: 1px solid #facc15;
+            border-radius: 40px;
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            font-size: 0.7rem;
+            backdrop-filter: blur(4px);
+        }
+        .last-copied-label {
+            color: #94a3b8;
+        }
+        .last-copied-value {
+            color: #facc15;
+            font-weight: bold;
+            font-family: monospace;
+            background: #1e293b;
+            padding: 2px 8px;
+            border-radius: 40px;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .last-copied-btn {
+            background: #475569;
+            padding: 2px 12px;
+            font-size: 0.65rem;
         }
         .bottom-menu {
             position: fixed;
@@ -201,6 +238,12 @@
             cursor: pointer;
             color: #94a3b8;
             font-size: 0.7rem;
+            transition: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bottom-menu .menu-item:active {
+            transform: scale(0.96);
+            background: #1e293b;
         }
         .bottom-menu .menu-item.active {
             background: #facc15;
@@ -210,9 +253,9 @@
             font-size: 1.2rem;
         }
         @media (max-width: 700px) {
-            .main-content { padding: 12px; padding-bottom: 70px; }
-            .user-row { flex-direction: row; gap: 10px; }
-            .phone-number, .password { font-size: 0.7rem; }
+            .main-content { padding: 12px; padding-bottom: 140px; }
+            .last-copied-panel { bottom: 65px; left: 8px; right: 8px; }
+            .last-copied-value { max-width: 120px; }
             .bottom-menu .menu-item { padding: 4px 12px; }
         }
     </style>
@@ -255,6 +298,13 @@
 
     <div id="toastMsg" class="toast"></div>
 
+    <!-- Last Copied Panel (Persistent) -->
+    <div class="last-copied-panel">
+        <span class="last-copied-label">📋 Last Copied:</span>
+        <span class="last-copied-value" id="lastCopiedValue">None</span>
+        <button id="showLastBtn" class="last-copied-btn">Show</button>
+    </div>
+
     <div class="bottom-menu">
         <button id="homeMenuBtn" class="menu-item active">
             <span class="icon">🏠</span>
@@ -273,9 +323,8 @@
     let matches = [];
     let matchIndex = -1;
     let currentSearch = '';
-    
-    // Save scroll position
     let savedScrollTop = 0;
+    let lastCopied = localStorage.getItem('lastCopiedFirebase') || "";
     const mainContent = document.getElementById('mainContent');
 
     const userListDiv = document.getElementById('userList');
@@ -291,39 +340,64 @@
     const webView = document.getElementById('webView');
     const homeMenuBtn = document.getElementById('homeMenuBtn');
     const webMenuBtn = document.getElementById('webMenuBtn');
+    const lastCopiedSpan = document.getElementById('lastCopiedValue');
+    const showLastBtn = document.getElementById('showLastBtn');
 
-    // Save scroll before leaving Home
-    function saveScrollPosition() {
-        if (homeView.style.display !== 'none') {
-            savedScrollTop = mainContent.scrollTop;
+    // Update last copied display and save to localStorage
+    function updateLastCopiedDisplay(value) {
+        lastCopied = value;
+        lastCopiedSpan.textContent = value || "None";
+        if (value) {
+            localStorage.setItem('lastCopiedFirebase', value);
+        } else {
+            localStorage.removeItem('lastCopiedFirebase');
         }
     }
 
-    // Restore scroll when coming back to Home
-    function restoreScrollPosition() {
-        setTimeout(() => {
-            mainContent.scrollTop = savedScrollTop;
-        }, 50);
+    // Load saved last copied on page load
+    if (lastCopied) {
+        lastCopiedSpan.textContent = lastCopied;
     }
 
-    homeMenuBtn.addEventListener('click', () => {
-        saveScrollPosition();
-        homeView.style.display = 'block';
-        webView.style.display = 'none';
-        homeMenuBtn.classList.add('active');
-        webMenuBtn.classList.remove('active');
-        restoreScrollPosition();
-    });
+    // Show last copied via alert
+    function showLastCopied() {
+        if (lastCopied) {
+            alert("Last copied: " + lastCopied);
+        } else {
+            alert("Nothing copied yet.");
+        }
+    }
 
-    webMenuBtn.addEventListener('click', () => {
-        saveScrollPosition();
-        homeView.style.display = 'none';
-        webView.style.display = 'block';
-        webMenuBtn.classList.add('active');
-        homeMenuBtn.classList.remove('active');
-    });
+    showLastBtn.addEventListener('click', showLastCopied);
 
-    function showToast(msg, isError = false) {
+    // Fast tab switching
+    function switchToHome() {
+        if (homeView.style.display === 'none') {
+            savedScrollTop = mainContent.scrollTop;
+            homeView.style.display = 'block';
+            webView.style.display = 'none';
+            homeMenuBtn.classList.add('active');
+            webMenuBtn.classList.remove('active');
+            setTimeout(() => { mainContent.scrollTop = savedScrollTop; }, 30);
+        }
+    }
+
+    function switchToWeb() {
+        if (webView.style.display === 'none') {
+            savedScrollTop = mainContent.scrollTop;
+            homeView.style.display = 'none';
+            webView.style.display = 'block';
+            webMenuBtn.classList.add('active');
+            homeMenuBtn.classList.remove('active');
+        }
+    }
+
+    homeMenuBtn.addEventListener('mousedown', switchToHome);
+    homeMenuBtn.addEventListener('touchstart', switchToHome);
+    webMenuBtn.addEventListener('mousedown', switchToWeb);
+    webMenuBtn.addEventListener('touchstart', switchToWeb);
+
+    function showToastMsg(msg, isError = false) {
         toast.textContent = msg;
         toast.style.backgroundColor = isError ? '#b91c1c' : '#1e293b';
         toast.style.opacity = '1';
@@ -333,7 +407,8 @@
     async function copyText(text, label) {
         try {
             await navigator.clipboard.writeText(text);
-            showToast(`✅ ${label} copied: ${text.substring(0, 20)}${text.length > 20 ? '…' : ''}`);
+            updateLastCopiedDisplay(text);
+            showToastMsg(`✅ ${label} copied: ${text.substring(0, 20)}${text.length > 20 ? '…' : ''}`);
         } catch {
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -341,7 +416,8 @@
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            showToast(`📋 ${label} copied`, false);
+            updateLastCopiedDisplay(text);
+            showToastMsg(`📋 ${label} copied`, false);
         }
     }
 
@@ -371,8 +447,7 @@
             renderList();
             statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
             clearHighlight();
-            // Restore scroll after data loads
-            restoreScrollPosition();
+            setTimeout(() => { mainContent.scrollTop = savedScrollTop; }, 50);
         } catch (err) {
             userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
             statsSpan.innerText = '❌ Failed';
@@ -418,7 +493,7 @@
     }
 
     function findAndHighlight() {
-        if (!allUsers.length) { showToast('Load data first', true); return; }
+        if (!allUsers.length) { showToastMsg('Load data first', true); return; }
         const term = searchInput.value.trim();
         if (!term) { clearHighlight(); return; }
         if (term === currentSearch && matches.length) { goToNext(); return; }
@@ -430,7 +505,7 @@
             if (u.phone.includes(lower) || u.password.toLowerCase().includes(lower)) matches.push(i);
         }
         if (!matches.length) {
-            showToast(`No match for "${term}"`, true);
+            showToastMsg(`No match for "${term}"`, true);
             clearHighlight();
             return;
         }
@@ -448,9 +523,8 @@
         if (matchIndex < 0 || matchIndex >= matches.length) return;
         const target = userListDiv.querySelector(`.user-row[data-idx='${matches[matchIndex]}']`);
         if (target) {
-            const container = mainContent;
             const targetTop = target.offsetTop - 100;
-            container.scrollTo({ top: targetTop, behavior: 'smooth' });
+            mainContent.scrollTo({ top: targetTop, behavior: 'smooth' });
         }
         statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
     }
