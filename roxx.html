@@ -252,6 +252,65 @@
         .bottom-menu .menu-item .icon {
             font-size: 1.2rem;
         }
+        /* Password overlay */
+        .password-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 15, 31, 0.88);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        .password-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .password-box {
+            background: #0f172a;
+            border: 1px solid #facc15;
+            border-radius: 24px;
+            padding: 28px;
+            width: 90%;
+            max-width: 360px;
+            text-align: center;
+        }
+        .password-box h2 {
+            color: #facc15;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+        }
+        .password-box input {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 40px;
+            padding: 10px 14px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .password-box button {
+            background: #facc15;
+            color: #0f172a;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .password-box .error-msg {
+            color: #ff8888;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            min-height: 1rem;
+        }
+        body.locked .main-content,
+        body.locked .bottom-menu,
+        body.locked .last-copied-panel {
+            filter: blur(8px) brightness(0.3);
+        }
         @media (max-width: 700px) {
             .main-content { padding: 12px; padding-bottom: 140px; }
             .last-copied-panel { bottom: 65px; left: 8px; right: 8px; }
@@ -260,7 +319,18 @@
         }
     </style>
 </head>
-<body>
+<body class="locked">
+
+    <!-- Password Overlay -->
+    <div id="passwordOverlay" class="password-overlay">
+        <div class="password-box">
+            <h2>🔒 Enter Password</h2>
+            <input type="password" id="passwordInput" placeholder="Password">
+            <button id="unlockBtn">Unlock</button>
+            <div class="error-msg" id="passwordError"></div>
+        </div>
+    </div>
+
     <div class="main-content" id="mainContent">
         <div id="homeView" class="container">
             <h1>📂 Bhallu Database · User List</h1>
@@ -343,6 +413,14 @@
     const lastCopiedSpan = document.getElementById('lastCopiedValue');
     const showLastBtn = document.getElementById('showLastBtn');
 
+    // Password overlay elements
+    const passwordOverlay = document.getElementById('passwordOverlay');
+    const passwordInput = document.getElementById('passwordInput');
+    const unlockBtn = document.getElementById('unlockBtn');
+    const passwordError = document.getElementById('passwordError');
+    const CORRECT_PASSWORD = 'ALLUPANKHA';
+    const UNLOCK_KEY = 'bhalluAppUnlocked';
+
     // Update last copied display and save to localStorage
     function updateLastCopiedDisplay(value) {
         lastCopied = value;
@@ -392,8 +470,18 @@
         }
     }
 
-    homeMenuBtn.addEventListener('mousedown', switchToHome);
-    homeMenuBtn.addEventListener('touchstart', switchToHome);
+    let lastHomeTap = 0;
+    function handleHomeTap() {
+        const now = Date.now();
+        if (now - lastHomeTap < 350) {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        lastHomeTap = now;
+        switchToHome();
+    }
+
+    homeMenuBtn.addEventListener('mousedown', handleHomeTap);
+    homeMenuBtn.addEventListener('touchstart', handleHomeTap);
     webMenuBtn.addEventListener('mousedown', switchToWeb);
     webMenuBtn.addEventListener('touchstart', switchToWeb);
 
@@ -403,6 +491,42 @@
         toast.style.opacity = '1';
         setTimeout(() => { toast.style.opacity = '0'; }, 1500);
     }
+
+    function showOverlay() {
+        passwordOverlay.classList.remove('hidden');
+        if (!document.body.classList.contains('locked')) document.body.classList.add('locked');
+    }
+
+    function hideOverlay() {
+        passwordOverlay.classList.add('hidden');
+        document.body.classList.remove('locked');
+    }
+
+    function checkUnlock() {
+        if (localStorage.getItem(UNLOCK_KEY) === 'true') {
+            hideOverlay();
+        } else {
+            showOverlay();
+        }
+    }
+
+    function attemptUnlock() {
+        const val = passwordInput.value.trim();
+        if (val === CORRECT_PASSWORD) {
+            localStorage.setItem(UNLOCK_KEY, 'true');
+            hideOverlay();
+            showToastMsg('🔓 Unlocked');
+        } else {
+            passwordError.textContent = '❌ Wrong password';
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+    }
+
+    unlockBtn.addEventListener('click', attemptUnlock);
+    passwordInput.addEventListener('keypress', e => { if (e.key === 'Enter') attemptUnlock(); });
+
+    checkUnlock();
 
     async function copyText(text, label) {
         try {
@@ -472,81 +596,3 @@
             `;
             row.querySelector('.phone-number').onclick = (e) => {
                 e.stopPropagation();
-                copyText(u.phone, 'Phone');
-            };
-            row.querySelector('.password').onclick = (e) => {
-                e.stopPropagation();
-                copyText(u.password, 'Password');
-            };
-            frag.appendChild(row);
-        }
-        userListDiv.innerHTML = '';
-        userListDiv.appendChild(frag);
-    }
-
-    function clearHighlight() {
-        document.querySelectorAll('.user-row').forEach(row => row.classList.remove('highlight'));
-        matches = [];
-        matchIndex = -1;
-        currentSearch = '';
-        statsSpan.innerText = `📞 ${allUsers.length} users`;
-    }
-
-    function findAndHighlight() {
-        if (!allUsers.length) { showToastMsg('Load data first', true); return; }
-        const term = searchInput.value.trim();
-        if (!term) { clearHighlight(); return; }
-        if (term === currentSearch && matches.length) { goToNext(); return; }
-        currentSearch = term;
-        const lower = term.toLowerCase();
-        matches = [];
-        for (let i = 0; i < allUsers.length; i++) {
-            const u = allUsers[i];
-            if (u.phone.includes(lower) || u.password.toLowerCase().includes(lower)) matches.push(i);
-        }
-        if (!matches.length) {
-            showToastMsg(`No match for "${term}"`, true);
-            clearHighlight();
-            return;
-        }
-        document.querySelectorAll('.user-row').forEach(row => row.classList.remove('highlight'));
-        for (let idx of matches) {
-            const row = userListDiv.querySelector(`.user-row[data-idx='${idx}']`);
-            if (row) row.classList.add('highlight');
-        }
-        matchIndex = 0;
-        scrollToMatch();
-        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
-    }
-
-    function scrollToMatch() {
-        if (matchIndex < 0 || matchIndex >= matches.length) return;
-        const target = userListDiv.querySelector(`.user-row[data-idx='${matches[matchIndex]}']`);
-        if (target) {
-            const targetTop = target.offsetTop - 100;
-            mainContent.scrollTo({ top: targetTop, behavior: 'smooth' });
-        }
-        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
-    }
-
-    function goToNext() {
-        if (!matches.length) { if (searchInput.value.trim()) findAndHighlight(); else statsSpan.innerText = `📞 ${allUsers.length} users`; return; }
-        matchIndex = (matchIndex + 1) % matches.length;
-        scrollToMatch();
-    }
-
-    showDataBtn.addEventListener('click', fetchData);
-    refreshBtn.addEventListener('click', fetchData);
-    findBtn.addEventListener('click', findAndHighlight);
-    nextBtn.addEventListener('click', goToNext);
-    clearBtn.addEventListener('click', () => { searchInput.value = ''; clearHighlight(); });
-    searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') findAndHighlight(); });
-
-    function escapeHtml(str) {
-        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
-    }
-
-    fetchData();
-</script>
-</body>
-</html>
