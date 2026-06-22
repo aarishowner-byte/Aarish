@@ -290,7 +290,7 @@
             text-align: center;
             margin-bottom: 12px;
         }
-        .password-box button {
+        .password-box button[type="submit"] {
             background: #facc15;
             color: #0f172a;
             border: none;
@@ -321,12 +321,12 @@
 <body class="locked">
 
     <div id="passwordOverlay" class="password-overlay">
-        <div class="password-box">
+        <form class="password-box" id="unlockForm">
             <h2>🔒 Enter Password</h2>
-            <input type="password" id="passwordInput" placeholder="Password">
-            <button id="unlockBtn">Unlock</button>
+            <input type="password" id="passwordInput" placeholder="Password" autocomplete="off" autocapitalize="characters">
+            <button type="submit" id="unlockBtn">Unlock</button>
             <div class="error-msg" id="passwordError"></div>
-        </div>
+        </form>
     </div>
 
     <div class="main-content" id="mainContent">
@@ -413,7 +413,7 @@
 
     const passwordOverlay = document.getElementById('passwordOverlay');
     const passwordInput = document.getElementById('passwordInput');
-    const unlockBtn = document.getElementById('unlockBtn');
+    const unlockForm = document.getElementById('unlockForm');
     const passwordError = document.getElementById('passwordError');
     const CORRECT_PASSWORD = 'ALLUPANKHA';
     const UNLOCK_KEY = 'bhalluAppUnlocked';
@@ -423,7 +423,7 @@
         try {
             const d = new Date();
             d.setFullYear(d.getFullYear() + 10);
-            document.cookie = UNLOCK_KEY + '=true;expires=' + d.toUTCString() + ';path=/';
+            document.cookie = UNLOCK_KEY + '=true;expires=' + d.toUTCString() + ';path=/;Secure;SameSite=Lax';
         } catch(e){}
     }
 
@@ -509,7 +509,11 @@
     }
 
     function attemptUnlock() {
-        const val = passwordInput.value.trim();
+        const val = passwordInput.value.trim().toUpperCase();
+        if (!val) {
+            passwordError.textContent = '⚠️ Enter a password';
+            return;
+        }
         if (val === CORRECT_PASSWORD) {
             setUnlockPermanent();
             hideOverlay();
@@ -521,8 +525,10 @@
         }
     }
 
-    unlockBtn.addEventListener('click', attemptUnlock);
-    passwordInput.addEventListener('keypress', e => { if (e.key === 'Enter') attemptUnlock(); });
+    unlockForm.addEventListener('submit', e => {
+        e.preventDefault();
+        attemptUnlock();
+    });
 
     checkUnlock();
 
@@ -584,9 +590,4 @@
         }
         const frag = document.createDocumentFragment();
         for (let i = 0; i < allUsers.length; i++) {
-            const u = allUsers[i];
-            const row = document.createElement('div');
-            row.className = 'user-row';
-            row.setAttribute('data-idx', i);
-            row.innerHTML = `
-         
+            con
