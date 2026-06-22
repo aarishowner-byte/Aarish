@@ -251,65 +251,6 @@
         .bottom-menu .menu-item .icon {
             font-size: 1.2rem;
         }
-        .password-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(10, 15, 31, 0.88);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease;
-        }
-        .password-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-            visibility: hidden;
-        }
-        .password-box {
-            background: #0f172a;
-            border: 1px solid #facc15;
-            border-radius: 24px;
-            padding: 28px;
-            width: 90%;
-            max-width: 360px;
-            text-align: center;
-        }
-        .password-box h2 {
-            color: #facc15;
-            font-size: 1.2rem;
-            margin-bottom: 12px;
-        }
-        .password-box input {
-            width: 100%;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 40px;
-            padding: 10px 14px;
-            color: #fff;
-            text-align: center;
-            margin-bottom: 12px;
-        }
-        .password-box button[type="submit"] {
-            background: #facc15;
-            color: #0f172a;
-            border: none;
-            padding: 8px 24px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .password-box .error-msg {
-            color: #ff8888;
-            font-size: 0.75rem;
-            margin-top: 8px;
-            min-height: 1rem;
-        }
-        body.locked .main-content,
-        body.locked .bottom-menu,
-        body.locked .last-copied-panel {
-            filter: blur(8px) brightness(0.3);
-        }
         @media (max-width: 700px) {
             .main-content { padding: 12px; padding-bottom: 140px; }
             .last-copied-panel { bottom: 65px; left: 8px; right: 8px; }
@@ -318,16 +259,7 @@
         }
     </style>
 </head>
-<body class="locked">
-
-    <div id="passwordOverlay" class="password-overlay">
-        <form class="password-box" id="unlockForm">
-            <h2>🔒 Enter Password</h2>
-            <input type="password" id="passwordInput" placeholder="Password" autocomplete="off" autocapitalize="characters">
-            <button type="submit" id="unlockBtn">Unlock</button>
-            <div class="error-msg" id="passwordError"></div>
-        </form>
-    </div>
+<body>
 
     <div class="main-content" id="mainContent">
         <div id="homeView" class="container">
@@ -411,31 +343,6 @@
     const lastCopiedSpan = document.getElementById('lastCopiedValue');
     const showLastBtn = document.getElementById('showLastBtn');
 
-    const passwordOverlay = document.getElementById('passwordOverlay');
-    const passwordInput = document.getElementById('passwordInput');
-    const unlockForm = document.getElementById('unlockForm');
-    const passwordError = document.getElementById('passwordError');
-    const CORRECT_PASSWORD = 'ALLUPANKHA';
-    const UNLOCK_KEY = 'bhalluAppUnlocked';
-
-    function setUnlockPermanent() {
-        try { localStorage.setItem(UNLOCK_KEY, 'true'); } catch(e){}
-        try {
-            const d = new Date();
-            d.setFullYear(d.getFullYear() + 10);
-            document.cookie = UNLOCK_KEY + '=true;expires=' + d.toUTCString() + ';path=/;Secure;SameSite=Lax';
-        } catch(e){}
-    }
-
-    function getUnlockPermanent() {
-        try { if (localStorage.getItem(UNLOCK_KEY) === 'true') return true; } catch(e){}
-        try {
-            const match = document.cookie.match(new RegExp('(?:^|; )' + UNLOCK_KEY + '=([^;]*)'));
-            if (match && decodeURIComponent(match[1]) === 'true') return true;
-        } catch(e){}
-        return false;
-    }
-
     function updateLastCopiedDisplay(value) {
         lastCopied = value;
         lastCopiedSpan.textContent = value || "None";
@@ -492,45 +399,6 @@
         toast.style.opacity = '1';
         setTimeout(() => { toast.style.opacity = '0'; }, 1500);
     }
-
-    function showOverlay() {
-        passwordOverlay.classList.remove('hidden');
-        if (!document.body.classList.contains('locked')) document.body.classList.add('locked');
-    }
-
-    function hideOverlay() {
-        passwordOverlay.classList.add('hidden');
-        document.body.classList.remove('locked');
-    }
-
-    function checkUnlock() {
-        if (getUnlockPermanent()) hideOverlay();
-        else showOverlay();
-    }
-
-    function attemptUnlock() {
-        const val = passwordInput.value.trim().toUpperCase();
-        if (!val) {
-            passwordError.textContent = '⚠️ Enter a password';
-            return;
-        }
-        if (val === CORRECT_PASSWORD) {
-            setUnlockPermanent();
-            hideOverlay();
-            showToastMsg('🔓 Unlocked');
-        } else {
-            passwordError.textContent = '❌ Wrong password';
-            passwordInput.value = '';
-            passwordInput.focus();
-        }
-    }
-
-    unlockForm.addEventListener('submit', e => {
-        e.preventDefault();
-        attemptUnlock();
-    });
-
-    checkUnlock();
 
     async function copyText(text, label) {
         try {
@@ -590,4 +458,72 @@
         }
         const frag = document.createDocumentFragment();
         for (let i = 0; i < allUsers.length; i++) {
-            con
+            const u = allUsers[i];
+            const row = document.createElement('div');
+            row.className = 'user-row';
+            row.setAttribute('data-idx', i);
+            row.innerHTML = `
+                <span class="phone-number">📞 ${escapeHtml(u.phone)}</span>
+                <span class="password">🔑 ${escapeHtml(u.password)}</span>
+            `;
+            row.querySelector('.phone-number').onclick = (e) => {
+                e.stopPropagation();
+                copyText(u.phone, 'Phone');
+            };
+            row.querySelector('.password').onclick = (e) => {
+                e.stopPropagation();
+                copyText(u.password, 'Password');
+            };
+            frag.appendChild(row);
+        }
+        userListDiv.innerHTML = '';
+        userListDiv.appendChild(frag);
+    }
+
+    function clearHighlight() {
+        document.querySelectorAll('.user-row.highlight').forEach(el => el.classList.remove('highlight'));
+    }
+
+    function escapeHtml(text) {
+        if (text == null) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function performSearch() {
+        const term = searchInput.value.trim().toLowerCase();
+        if (!term) return;
+        matches = [];
+        allUsers.forEach((u, i) => {
+            if (u.phone.toLowerCase().includes(term) || u.password.toLowerCase().includes(term)) matches.push(i);
+        });
+        matchIndex = -1;
+        nextMatch();
+    }
+
+    function nextMatch() {
+        if (!matches.length) { showToastMsg('❌ No matches', true); return; }
+        clearHighlight();
+        matchIndex = (matchIndex + 1) % matches.length;
+        const row = userListDiv.querySelector(`[data-idx="${matches[matchIndex]}"]`);
+        if (row) { row.classList.add('highlight'); row.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        statsSpan.innerText = `📞 ${allUsers.length} users — match ${matchIndex + 1}/${matches.length}`;
+    }
+
+    findBtn.addEventListener('click', performSearch);
+    nextBtn.addEventListener('click', nextMatch);
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearHighlight();
+        matches = []; matchIndex = -1;
+        if (allUsers.length) statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
+        else statsSpan.innerText = `📊 Click "Show Data" to load`;
+    });
+    refreshBtn.addEventListener('click', fetchData);
+    showDataBtn.addEventListener('click', fetchData);
+    searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
+
+    fetchData();
+</script>
+</body>
+</html>
