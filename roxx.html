@@ -177,7 +177,6 @@
             border-radius: 20px;
             background: #fff;
         }
-        /* Last Copied Panel */
         .last-copied-panel {
             position: fixed;
             bottom: 70px;
@@ -252,7 +251,6 @@
         .bottom-menu .menu-item .icon {
             font-size: 1.2rem;
         }
-        /* Password overlay */
         .password-overlay {
             position: fixed;
             inset: 0;
@@ -266,6 +264,7 @@
         .password-overlay.hidden {
             opacity: 0;
             pointer-events: none;
+            visibility: hidden;
         }
         .password-box {
             background: #0f172a;
@@ -321,7 +320,6 @@
 </head>
 <body class="locked">
 
-    <!-- Password Overlay -->
     <div id="passwordOverlay" class="password-overlay">
         <div class="password-box">
             <h2>🔒 Enter Password</h2>
@@ -368,7 +366,6 @@
 
     <div id="toastMsg" class="toast"></div>
 
-    <!-- Last Copied Panel (Persistent) -->
     <div class="last-copied-panel">
         <span class="last-copied-label">📋 Last Copied:</span>
         <span class="last-copied-value" id="lastCopiedValue">None</span>
@@ -394,9 +391,10 @@
     let matchIndex = -1;
     let currentSearch = '';
     let savedScrollTop = 0;
-    let lastCopied = localStorage.getItem('lastCopiedFirebase') || "";
-    const mainContent = document.getElementById('mainContent');
+    let lastCopied = "";
+    try { lastCopied = localStorage.getItem('lastCopiedFirebase') || ""; } catch(e){}
 
+    const mainContent = document.getElementById('mainContent');
     const userListDiv = document.getElementById('userList');
     const statsSpan = document.getElementById('statsInfo');
     const searchInput = document.getElementById('searchInput');
@@ -413,7 +411,6 @@
     const lastCopiedSpan = document.getElementById('lastCopiedValue');
     const showLastBtn = document.getElementById('showLastBtn');
 
-    // Password overlay elements
     const passwordOverlay = document.getElementById('passwordOverlay');
     const passwordInput = document.getElementById('passwordInput');
     const unlockBtn = document.getElementById('unlockBtn');
@@ -421,34 +418,41 @@
     const CORRECT_PASSWORD = 'ALLUPANKHA';
     const UNLOCK_KEY = 'bhalluAppUnlocked';
 
-    // Update last copied display and save to localStorage
+    function setUnlockPermanent() {
+        try { localStorage.setItem(UNLOCK_KEY, 'true'); } catch(e){}
+        try {
+            const d = new Date();
+            d.setFullYear(d.getFullYear() + 10);
+            document.cookie = UNLOCK_KEY + '=true;expires=' + d.toUTCString() + ';path=/';
+        } catch(e){}
+    }
+
+    function getUnlockPermanent() {
+        try { if (localStorage.getItem(UNLOCK_KEY) === 'true') return true; } catch(e){}
+        try {
+            const match = document.cookie.match(new RegExp('(?:^|; )' + UNLOCK_KEY + '=([^;]*)'));
+            if (match && decodeURIComponent(match[1]) === 'true') return true;
+        } catch(e){}
+        return false;
+    }
+
     function updateLastCopiedDisplay(value) {
         lastCopied = value;
         lastCopiedSpan.textContent = value || "None";
-        if (value) {
-            localStorage.setItem('lastCopiedFirebase', value);
-        } else {
-            localStorage.removeItem('lastCopiedFirebase');
-        }
+        try {
+            if (value) localStorage.setItem('lastCopiedFirebase', value);
+            else localStorage.removeItem('lastCopiedFirebase');
+        } catch(e){}
     }
 
-    // Load saved last copied on page load
-    if (lastCopied) {
-        lastCopiedSpan.textContent = lastCopied;
-    }
+    if (lastCopied) lastCopiedSpan.textContent = lastCopied;
 
-    // Show last copied via alert
     function showLastCopied() {
-        if (lastCopied) {
-            alert("Last copied: " + lastCopied);
-        } else {
-            alert("Nothing copied yet.");
-        }
+        if (lastCopied) alert("Last copied: " + lastCopied);
+        else alert("Nothing copied yet.");
     }
-
     showLastBtn.addEventListener('click', showLastCopied);
 
-    // Fast tab switching
     function switchToHome() {
         if (homeView.style.display === 'none') {
             savedScrollTop = mainContent.scrollTop;
@@ -473,13 +477,10 @@
     let lastHomeTap = 0;
     function handleHomeTap() {
         const now = Date.now();
-        if (now - lastHomeTap < 350) {
-            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        if (now - lastHomeTap < 350) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
         lastHomeTap = now;
         switchToHome();
     }
-
     homeMenuBtn.addEventListener('mousedown', handleHomeTap);
     homeMenuBtn.addEventListener('touchstart', handleHomeTap);
     webMenuBtn.addEventListener('mousedown', switchToWeb);
@@ -503,17 +504,14 @@
     }
 
     function checkUnlock() {
-        if (localStorage.getItem(UNLOCK_KEY) === 'true') {
-            hideOverlay();
-        } else {
-            showOverlay();
-        }
+        if (getUnlockPermanent()) hideOverlay();
+        else showOverlay();
     }
 
     function attemptUnlock() {
         const val = passwordInput.value.trim();
         if (val === CORRECT_PASSWORD) {
-            localStorage.setItem(UNLOCK_KEY, 'true');
+            setUnlockPermanent();
             hideOverlay();
             showToastMsg('🔓 Unlocked');
         } else {
@@ -541,7 +539,7 @@
             document.execCommand('copy');
             document.body.removeChild(textarea);
             updateLastCopiedDisplay(text);
-            showToastMsg(`📋 ${label} copied`, false);
+            showToastMsg(`📋 ${label} copied`);
         }
     }
 
@@ -591,8 +589,4 @@
             row.className = 'user-row';
             row.setAttribute('data-idx', i);
             row.innerHTML = `
-                <span class="phone-number">📞 ${escapeHtml(u.phone)}</span>
-                <span class="password">🔑 ${escapeHtml(u.password)}</span>
-            `;
-            row.querySelector('.phone-number').onclick = (e) => {
-                e.stopPropagation();
+         
