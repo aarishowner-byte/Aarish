@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Bhallu Database · Last Copy Persistent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0f1f;
+            font-family: 'Segoe UI', 'Fira Code', monospace;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 130px;
+        }
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
+        .main-content::-webkit-scrollbar-thumb { background: #facc15; border-radius: 10px; }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, #facc15, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 4px;
+        }
+        .sub {
+            color: #94a3b8;
+            margin-bottom: 16px;
+            font-size: 0.75rem;
+        }
+        .controls {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 48px;
+            padding: 10px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .url-group {
+            flex: 2;
+            min-width: 180px;
+        }
+        .url-group label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            display: block;
+        }
+        input {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 40px;
+            padding: 6px 12px;
+            color: white;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+        .search-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .search-group input {
+            width: 160px;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            font-size: 0.7rem;
+        }
+        .show-data-btn { background: #10b981; }
+        .data-container {
+            background: #0f172a;
+            border: 1px solid #2d3a5e;
+            border-radius: 24px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .data-header {
+            background: #1e293b;
+            padding: 8px 16px;
+            border-bottom: 1px solid #334155;
+        }
+        .stats {
+            font-size: 0.8rem;
+            color: #facc15;
+        }
+        .user-list {
+            max-height: none;
+            overflow-y: visible;
+        }
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 1px solid #1e2a3e;
+            cursor: pointer;
+        }
+        .user-row:hover {
+            background: rgba(250, 204, 21, 0.08);
+        }
+        .phone-number {
+            color: #facc15;
+            font-weight: 600;
+            font-size: 0.85rem;
+            background: rgba(250, 204, 21, 0.1);
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        .password {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-family: monospace;
+            background: #1e293b;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        .user-row.highlight {
+            background: #facc15;
+        }
+        .user-row.highlight .phone-number,
+        .user-row.highlight .password {
+            background: #facc15;
+            color: #0f172a;
+        }
+        .empty, .loading, .error {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+        }
+        .error { color: #ff8888; }
+        .toast {
+            position: fixed;
+            bottom: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #facc15;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .web-view {
+            display: none;
+            height: calc(100vh - 130px);
+        }
+        .web-view iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 20px;
+            background: #fff;
+        }
+        /* Last Copied Panel */
+        .last-copied-panel {
+            position: fixed;
+            bottom: 70px;
+            left: 10px;
+            right: 10px;
+            background: #0f172a;
+            border: 1px solid #facc15;
+            border-radius: 40px;
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            font-size: 0.7rem;
+            backdrop-filter: blur(4px);
+        }
+        .last-copied-label {
+            color: #94a3b8;
+        }
+        .last-copied-value {
+            color: #facc15;
+            font-weight: bold;
+            font-family: monospace;
+            background: #1e293b;
+            padding: 2px 8px;
+            border-radius: 40px;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .last-copied-btn {
+            background: #475569;
+            padding: 2px 12px;
+            font-size: 0.65rem;
+        }
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border-top: 1px solid #334155;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 20px;
+            z-index: 100;
+        }
+        .bottom-menu .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            transition: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bottom-menu .menu-item:active {
+            transform: scale(0.96);
+            background: #1e293b;
+        }
+        .bottom-menu .menu-item.active {
+            background: #facc15;
+            color: #0f172a;
+        }
+        .bottom-menu .menu-item .icon {
+            font-size: 1.2rem;
+        }
+        @media (max-width: 700px) {
+            .main-content { padding: 12px; padding-bottom: 140px; }
+            .last-copied-panel { bottom: 65px; left: 8px; right: 8px; }
+            .last-copied-value { max-width: 120px; }
+            .bottom-menu .menu-item { padding: 4px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="mainContent">
+        <div id="homeView" class="container">
+            <h1>📂 Bhallu Database · User List</h1>
+            <div class="sub">Tap phone → copy number | Tap password → copy password</div>
+
+            <div class="controls">
+                <div class="url-group">
+                    <label>🔥 Firebase URL</label>
+                    <input type="text" id="displayUrl" value="https://bhallu-ki-gaad-default-rtdb.asia-southeast1.firebasedatabase.app/.json" readonly>
+                </div>
+                <div class="search-group">
+                    <input type="text" id="searchInput" placeholder="🔍 Find phone/pass">
+                    <button id="findBtn">Find</button>
+                    <button id="nextBtn">Next</button>
+                    <button id="clearBtn">Clear</button>
+                    <button id="refreshBtn">Refresh</button>
+                    <button id="showDataBtn" class="show-data-btn">📡 Show Data</button>
+                </div>
+            </div>
+
+            <div class="data-container">
+                <div class="data-header">
+                    <div class="stats" id="statsInfo">📊 Click "Show Data" to load</div>
+                </div>
+                <div id="userList" class="user-list">
+                    <div class="empty">✨ Press "Show Data"</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="webView" class="web-view">
+            <iframe id="yaarwinFrame" src="https://yaarwin.xyz/#/login" title="YaarWin Login" allow="clipboard-read; clipboard-write"></iframe>
+        </div>
+    </div>
+
+    <div id="toastMsg" class="toast"></div>
+
+    <!-- Last Copied Panel (Persistent) -->
+    <div class="last-copied-panel">
+        <span class="last-copied-label">📋 Last Copied:</span>
+        <span class="last-copied-value" id="lastCopiedValue">None</span>
+        <button id="showLastBtn" class="last-copied-btn">Show</button>
+    </div>
+
+    <div class="bottom-menu">
+        <button id="homeMenuBtn" class="menu-item active">
+            <span class="icon">🏠</span>
+            <span>Home</span>
+        </button>
+        <button id="webMenuBtn" class="menu-item">
+            <span class="icon">🌐</span>
+            <span>Web</span>
+        </button>
+    </div>
+
+<script>
+    const ALPHA_URL = "https://alphaaxriajjc-default-rtdb.asia-southeast1.firebasedatabase.app/.json";
+
+    let allUsers = [];
+    let matches = [];
+    let matchIndex = -1;
+    let currentSearch = '';
+    let savedScrollTop = 0;
+    let lastCopied = localStorage.getItem('lastCopiedFirebase') || "";
+    const mainContent = document.getElementById('mainContent');
+
+    const userListDiv = document.getElementById('userList');
+    const statsSpan = document.getElementById('statsInfo');
+    const searchInput = document.getElementById('searchInput');
+    const findBtn = document.getElementById('findBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const showDataBtn = document.getElementById('showDataBtn');
+    const toast = document.getElementById('toastMsg');
+    const homeView = document.getElementById('homeView');
+    const webView = document.getElementById('webView');
+    const homeMenuBtn = document.getElementById('homeMenuBtn');
+    const webMenuBtn = document.getElementById('webMenuBtn');
+    const lastCopiedSpan = document.getElementById('lastCopiedValue');
+    const showLastBtn = document.getElementById('showLastBtn');
+
+    // Update last copied display and save to localStorage
+    function updateLastCopiedDisplay(value) {
+        lastCopied = value;
+        lastCopiedSpan.textContent = value || "None";
+        if (value) {
+            localStorage.setItem('lastCopiedFirebase', value);
+        } else {
+            localStorage.removeItem('lastCopiedFirebase');
+        }
+    }
+
+    // Load saved last copied on page load
+    if (lastCopied) {
+        lastCopiedSpan.textContent = lastCopied;
+    }
+
+    // Show last copied via alert
+    function showLastCopied() {
+        if (lastCopied) {
+            alert("Last copied: " + lastCopied);
+        } else {
+            alert("Nothing copied yet.");
+        }
+    }
+
+    showLastBtn.addEventListener('click', showLastCopied);
+
+    // Fast tab switching
+    function switchToHome() {
+        if (homeView.style.display === 'none') {
+            savedScrollTop = mainContent.scrollTop;
+            homeView.style.display = 'block';
+            webView.style.display = 'none';
+            homeMenuBtn.classList.add('active');
+            webMenuBtn.classList.remove('active');
+            setTimeout(() => { mainContent.scrollTop = savedScrollTop; }, 30);
+        }
+    }
+
+    function switchToWeb() {
+        if (webView.style.display === 'none') {
+            savedScrollTop = mainContent.scrollTop;
+            homeView.style.display = 'none';
+            webView.style.display = 'block';
+            webMenuBtn.classList.add('active');
+            homeMenuBtn.classList.remove('active');
+        }
+    }
+
+    homeMenuBtn.addEventListener('mousedown', switchToHome);
+    homeMenuBtn.addEventListener('touchstart', switchToHome);
+    webMenuBtn.addEventListener('mousedown', switchToWeb);
+    webMenuBtn.addEventListener('touchstart', switchToWeb);
+
+    function showToastMsg(msg, isError = false) {
+        toast.textContent = msg;
+        toast.style.backgroundColor = isError ? '#b91c1c' : '#1e293b';
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+    }
+
+    async function copyText(text, label) {
+        try {
+            await navigator.clipboard.writeText(text);
+            updateLastCopiedDisplay(text);
+            showToastMsg(`✅ ${label} copied: ${text.substring(0, 20)}${text.length > 20 ? '…' : ''}`);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            updateLastCopiedDisplay(text);
+            showToastMsg(`📋 ${label} copied`, false);
+        }
+    }
+
+    function extractUsers(obj, arr) {
+        if (!obj || typeof obj !== 'object') return;
+        if (obj.phone) {
+            arr.push({ phone: String(obj.phone), password: obj.password !== undefined ? String(obj.password) : '(no password)' });
+        }
+        for (let val of Object.values(obj)) extractUsers(val, arr);
+    }
+
+    async function fetchData() {
+        userListDiv.innerHTML = '<div class="loading">⏳ Fetching...</div>';
+        statsSpan.innerText = '⏳ Loading...';
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 20000);
+            const res = await fetch(ALPHA_URL, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const users = [];
+            extractUsers(data, users);
+            const map = new Map();
+            for (let u of users) map.set(u.phone, u);
+            allUsers = Array.from(map.values()).sort((a,b) => a.phone.localeCompare(b.phone));
+            renderList();
+            statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
+            clearHighlight();
+            setTimeout(() => { mainContent.scrollTop = savedScrollTop; }, 50);
+        } catch (err) {
+            userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
+            statsSpan.innerText = '❌ Failed';
+            allUsers = [];
+        }
+    }
+
+    function renderList() {
+        if (!allUsers.length) {
+            userListDiv.innerHTML = '<div class="empty">No users found. Try "Show Data".</div>';
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < allUsers.length; i++) {
+            const u = allUsers[i];
+            const row = document.createElement('div');
+            row.className = 'user-row';
+            row.setAttribute('data-idx', i);
+            row.innerHTML = `
+                <span class="phone-number">📞 ${escapeHtml(u.phone)}</span>
+                <span class="password">🔑 ${escapeHtml(u.password)}</span>
+            `;
+            row.querySelector('.phone-number').onclick = (e) => {
+                e.stopPropagation();
+                copyText(u.phone, 'Phone');
+            };
+            row.querySelector('.password').onclick = (e) => {
+                e.stopPropagation();
+                copyText(u.password, 'Password');
+            };
+            frag.appendChild(row);
+        }
+        userListDiv.innerHTML = '';
+        userListDiv.appendChild(frag);
+    }
+
+    function clearHighlight() {
+        document.querySelectorAll('.user-row').forEach(row => row.classList.remove('highlight'));
+        matches = [];
+        matchIndex = -1;
+        currentSearch = '';
+        statsSpan.innerText = `📞 ${allUsers.length} users`;
+    }
+
+    function findAndHighlight() {
+        if (!allUsers.length) { showToastMsg('Load data first', true); return; }
+        const term = searchInput.value.trim();
+        if (!term) { clearHighlight(); return; }
+        if (term === currentSearch && matches.length) { goToNext(); return; }
+        currentSearch = term;
+        const lower = term.toLowerCase();
+        matches = [];
+        for (let i = 0; i < allUsers.length; i++) {
+            const u = allUsers[i];
+            if (u.phone.includes(lower) || u.password.toLowerCase().includes(lower)) matches.push(i);
+        }
+        if (!matches.length) {
+            showToastMsg(`No match for "${term}"`, true);
+            clearHighlight();
+            return;
+        }
+        document.querySelectorAll('.user-row').forEach(row => row.classList.remove('highlight'));
+        for (let idx of matches) {
+            const row = userListDiv.querySelector(`.user-row[data-idx='${idx}']`);
+            if (row) row.classList.add('highlight');
+        }
+        matchIndex = 0;
+        scrollToMatch();
+        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
+    }
+
+    function scrollToMatch() {
+        if (matchIndex < 0 || matchIndex >= matches.length) return;
+        const target = userListDiv.querySelector(`.user-row[data-idx='${matches[matchIndex]}']`);
+        if (target) {
+            const targetTop = target.offsetTop - 100;
+            mainContent.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
+        statsSpan.innerText = `🔍 ${matches.length} matches — ${matchIndex+1}/${matches.length}`;
+    }
+
+    function goToNext() {
+        if (!matches.length) { if (searchInput.value.trim()) findAndHighlight(); else statsSpan.innerText = `📞 ${allUsers.length} users`; return; }
+        matchIndex = (matchIndex + 1) % matches.length;
+        scrollToMatch();
+    }
+
+    showDataBtn.addEventListener('click', fetchData);
+    refreshBtn.addEventListener('click', fetchData);
+    findBtn.addEventListener('click', findAndHighlight);
+    nextBtn.addEventListener('click', goToNext);
+    clearBtn.addEventListener('click', () => { searchInput.value = ''; clearHighlight(); });
+    searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') findAndHighlight(); });
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+    }
+
+    fetchData();
+</script>
+</body>
+</html>
