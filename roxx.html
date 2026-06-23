@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Bhallu Database · Last 3 Copies</title>
+    <title>Bhallu Database · Aarish</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -575,60 +575,4 @@
                 e.stopPropagation();
                 copyText(u.phone, 'Phone', row);
             };
-            row.querySelector('.password').onclick = (e) => {
-                e.stopPropagation();
-                copyText(u.password, 'Password', row);
-            };
-            frag.appendChild(row);
-        }
-        userListDiv.innerHTML = '';
-        userListDiv.appendChild(frag);
-    }
-
-    function clearHighlight() {
-        document.querySelectorAll('.user-row.highlight').forEach(el => el.classList.remove('highlight'));
-    }
-
-    function escapeHtml(text) {
-        if (text == null) return '';
-        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' };
-        return String(text).replace(/[&<>"']/g, m => map[m]);
-    }
-
-    function performSearch() {
-        const term = searchInput.value.trim().toLowerCase();
-        if (!term) return;
-        matches = [];
-        allUsers.forEach((u, i) => {
-            if (u.phone.toLowerCase().includes(term) || u.password.toLowerCase().includes(term)) matches.push(i);
-        });
-        matchIndex = -1;
-        nextMatch();
-    }
-
-    function nextMatch() {
-        if (!matches.length) { showToastMsg('❌ No matches', true); return; }
-        clearHighlight();
-        matchIndex = (matchIndex + 1) % matches.length;
-        const row = userListDiv.querySelector(`[data-idx="${matches[matchIndex]}"]`);
-        if (row) { row.classList.add('highlight'); row.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-        statsSpan.innerText = `📞 ${allUsers.length} users — match ${matchIndex + 1}/${matches.length}`;
-    }
-
-    findBtn.addEventListener('click', performSearch);
-    nextBtn.addEventListener('click', nextMatch);
-    clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        clearHighlight();
-        matches = []; matchIndex = -1;
-        if (allUsers.length) statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
-        else statsSpan.innerText = `📊 Click "Show Data" to load`;
-    });
-    refreshBtn.addEventListener('click', fetchData);
-    showDataBtn.addEventListener('click', fetchData);
-    searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
-
-    fetchData();
-</script>
-</body>
-</html>
+            row.querySelector('.password').onclick = (e) => 
