@@ -419,6 +419,19 @@
 
     renderLastCopiedPanel();
 
+    // Instant cached data display so users see data immediately on open
+    (function loadCache(){
+        try {
+            const cached = localStorage.getItem('bhalluUsersCache');
+            if (cached) {
+                allUsers = JSON.parse(cached);
+                renderList();
+                statsSpan.innerText = `📞 ${allUsers.length} users — refreshing...`;
+                restoreCopiedHighlight();
+            }
+        } catch(e){}
+    })();
+
     function showLastCopied() {
         if (!lastCopiedList.length) {
             alert("Nothing copied yet.");
@@ -549,8 +562,9 @@
             clearHighlight();
             restoreCopiedHighlight();
             setTimeout(() => { mainContent.scrollTop = savedScrollTop; }, 50);
+            try { localStorage.setItem('bhalluUsersCache', JSON.stringify(allUsers)); } catch(e){}
         } catch (err) {
-            userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
+            userListDiv.innerHTML = `<div class="error">❌ Error: ${err.name === 'AbortError' ? 'Request timeout (20s)' : err.message}</div>`;
             statsSpan.innerText = '❌ Failed';
             allUsers = [];
         }
@@ -576,4 +590,75 @@
                 copyText(u.phone, 'Phone', row);
             };
             row.querySelector('.password').onclick = (e) => {
-                e.stop
+                e.stopPropagation();
+                copyText(u.password, 'Password', row);
+            };
+            frag.appendChild(row);
+        }
+        userListDiv.innerHTML = '';
+        userListDiv.appendChild(frag);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function clearHighlight() {
+        document.querySelectorAll('.user-row.highlight').forEach(r => r.classList.remove('highlight'));
+        matches = [];
+        matchIndex = -1;
+    }
+
+    function focusMatch() {
+        if (matchIndex < 0 || matchIndex >= matches.length) return;
+        const idx = matches[matchIndex];
+        const row = userListDiv.querySelector(`[data-idx="${idx}"]`);
+        if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        statsSpan.innerText = `📞 ${allUsers.length} users — match ${matchIndex + 1}/${matches.length}`;
+    }
+
+    findBtn.addEventListener('click', () => {
+        const term = searchInput.value.trim();
+        if (!term) return;
+        currentSearch = term;
+        clearHighlight();
+        matches = [];
+        const lower = term.toLowerCase();
+        allUsers.forEach((u, i) => {
+            if (u.phone.includes(term) || u.password.toLowerCase().includes(lower)) matches.push(i);
+        });
+        if (!matches.length) { showToastMsg('No matches found', true); return; }
+
+        // Sab search results ko permanently red highlight karo
+        matches.forEach(idx => {
+            const row = userListDiv.querySelector(`[data-idx="${idx}"]`);
+            if (row) row.classList.add('highlight');
+        });
+
+        matchIndex = 0;
+        focusMatch();
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (!matches.length) return;
+        matchIndex = (matchIndex + 1) % matches.length;
+        focusMatch();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearHighlight();
+        statsSpan.innerText = allUsers.length ? `📞 ${allUsers.length} users — tap to copy` : `📊 Auto-loading...`;
+    });
+
+    showDataBtn.addEventListener('click', fetchData);
+    refreshBtn.addEventListener('click', fetchData);
+
+    fetchData();
+</script>
+</body>
+</html>
