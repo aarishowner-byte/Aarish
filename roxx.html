@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Bhallu Database · Last Copy Persistent</title>
+    <title>Bhallu Database · Last 3 Copies</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -138,12 +138,26 @@
             border-radius: 40px;
         }
         .user-row.highlight {
-            background: #facc15;
+            background: #dc2626;
         }
         .user-row.highlight .phone-number,
         .user-row.highlight .password {
+            background: #b91c1c;
+            color: #ffffff;
+        }
+        .user-row.copied {
+            background: #facc15 !important;
+            border-left: 5px solid #ffffff;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.6);
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 2;
+        }
+        .user-row.copied .phone-number,
+        .user-row.copied .password {
             background: #facc15;
             color: #0f172a;
+            font-weight: bold;
         }
         .empty, .loading, .error {
             text-align: center;
@@ -195,6 +209,8 @@
         }
         .last-copied-label {
             color: #94a3b8;
+            white-space: nowrap;
+            margin-right: 6px;
         }
         .last-copied-value {
             color: #facc15;
@@ -203,15 +219,31 @@
             background: #1e293b;
             padding: 2px 8px;
             border-radius: 40px;
-            max-width: 200px;
+            max-width: 220px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            flex: 1;
         }
         .last-copied-btn {
             background: #475569;
             padding: 2px 12px;
             font-size: 0.65rem;
+            white-space: nowrap;
+            margin-left: 6px;
+        }
+        .copy-count-badge {
+            background: #facc15;
+            color: #0f172a;
+            font-size: 0.6rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 6px;
         }
         .bottom-menu {
             position: fixed;
@@ -299,9 +331,12 @@
     <div id="toastMsg" class="toast"></div>
 
     <div class="last-copied-panel">
-        <span class="last-copied-label">📋 Last Copied:</span>
-        <span class="last-copied-value" id="lastCopiedValue">None</span>
-        <button id="showLastBtn" class="last-copied-btn">Show</button>
+        <div style="display:flex;align-items:center;">
+            <span class="last-copied-label">📋 Latest:</span>
+            <span class="last-copied-value" id="lastCopiedValue">None</span>
+            <span id="copyCountBadge" class="copy-count-badge" style="display:none;">1</span>
+        </div>
+        <button id="showLastBtn" class="last-copied-btn">Show All</button>
     </div>
 
     <div class="bottom-menu">
@@ -323,8 +358,17 @@
     let matchIndex = -1;
     let currentSearch = '';
     let savedScrollTop = 0;
-    let lastCopied = "";
-    try { lastCopied = localStorage.getItem('lastCopiedFirebase') || ""; } catch(e){}
+    let lastCopiedList = [];
+    try {
+        const stored = localStorage.getItem('lastCopiedListFirebase');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            lastCopiedList = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+        } else {
+            const old = localStorage.getItem('lastCopiedFirebase');
+            if (old) lastCopiedList = [old];
+        }
+    } catch(e){ lastCopiedList = []; }
 
     const mainContent = document.getElementById('mainContent');
     const userListDiv = document.getElementById('userList');
@@ -341,22 +385,50 @@
     const homeMenuBtn = document.getElementById('homeMenuBtn');
     const webMenuBtn = document.getElementById('webMenuBtn');
     const lastCopiedSpan = document.getElementById('lastCopiedValue');
+    const copyCountBadge = document.getElementById('copyCountBadge');
     const showLastBtn = document.getElementById('showLastBtn');
 
+    function renderLastCopiedPanel() {
+        if (!lastCopiedList.length) {
+            lastCopiedSpan.textContent = "None";
+            showLastBtn.textContent = "Show All";
+            copyCountBadge.style.display = "none";
+            return;
+        }
+        lastCopiedSpan.textContent = lastCopiedList[0];
+        const count = lastCopiedList.length;
+        if (count > 1) {
+            copyCountBadge.textContent = count;
+            copyCountBadge.style.display = "inline-flex";
+            showLastBtn.textContent = "Show All";
+        } else {
+            copyCountBadge.style.display = "none";
+            showLastBtn.textContent = "Show";
+        }
+    }
+
     function updateLastCopiedDisplay(value) {
-        lastCopied = value;
-        lastCopiedSpan.textContent = value || "None";
+        lastCopiedList = lastCopiedList.filter(v => v !== value);
+        lastCopiedList.unshift(value);
+        if (lastCopiedList.length > 3) lastCopiedList = lastCopiedList.slice(0, 3);
+        renderLastCopiedPanel();
         try {
-            if (value) localStorage.setItem('lastCopiedFirebase', value);
-            else localStorage.removeItem('lastCopiedFirebase');
+            localStorage.setItem('lastCopiedListFirebase', JSON.stringify(lastCopiedList));
         } catch(e){}
     }
 
-    if (lastCopied) lastCopiedSpan.textContent = lastCopied;
+    renderLastCopiedPanel();
 
     function showLastCopied() {
-        if (lastCopied) alert("Last copied: " + lastCopied);
-        else alert("Nothing copied yet.");
+        if (!lastCopiedList.length) {
+            alert("Nothing copied yet.");
+            return;
+        }
+        let msg = "📋 Last " + lastCopiedList.length + " Copied:\n\n";
+        lastCopiedList.forEach((val, idx) => {
+            msg += `${idx + 1}. ${val}\n`;
+        });
+        alert(msg);
     }
     showLastBtn.addEventListener('click', showLastCopied);
 
@@ -400,10 +472,41 @@
         setTimeout(() => { toast.style.opacity = '0'; }, 1500);
     }
 
-    async function copyText(text, label) {
+    function highlightCopiedRow(rowEl) {
+        document.querySelectorAll('.user-row').forEach(r => {
+            r.classList.remove('copied');
+        });
+        rowEl.classList.add('copied');
+        if (rowEl._copyTimer) clearTimeout(rowEl._copyTimer);
+        rowEl._copyTimer = setTimeout(() => {
+            rowEl.classList.remove('copied');
+        }, 3000);
+    }
+
+    function restoreCopiedHighlight() {
+        if (!lastCopiedList.length || !allUsers.length) return;
+        const copiedVal = lastCopiedList[0];
+        let foundIdx = -1;
+        for (let i = 0; i < allUsers.length; i++) {
+            if (allUsers[i].phone === copiedVal || allUsers[i].password === copiedVal) {
+                foundIdx = i;
+                break;
+            }
+        }
+        if (foundIdx !== -1) {
+            const row = userListDiv.querySelector(`[data-idx="${foundIdx}"]`);
+            if (row) {
+                document.querySelectorAll('.user-row.copied').forEach(r => r.classList.remove('copied'));
+                row.classList.add('copied');
+            }
+        }
+    }
+
+    async function copyText(text, label, rowEl) {
         try {
             await navigator.clipboard.writeText(text);
             updateLastCopiedDisplay(text);
+            if (rowEl) highlightCopiedRow(rowEl);
             showToastMsg(`✅ ${label} copied: ${text.substring(0, 20)}${text.length > 20 ? '…' : ''}`);
         } catch {
             const textarea = document.createElement('textarea');
@@ -413,6 +516,7 @@
             document.execCommand('copy');
             document.body.removeChild(textarea);
             updateLastCopiedDisplay(text);
+            if (rowEl) highlightCopiedRow(rowEl);
             showToastMsg(`📋 ${label} copied`);
         }
     }
@@ -443,6 +547,7 @@
             renderList();
             statsSpan.innerText = `📞 ${allUsers.length} users — tap to copy`;
             clearHighlight();
+            restoreCopiedHighlight();
             setTimeout(() => { mainContent.scrollTop = savedScrollTop; }, 50);
         } catch (err) {
             userListDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
@@ -468,11 +573,11 @@
             `;
             row.querySelector('.phone-number').onclick = (e) => {
                 e.stopPropagation();
-                copyText(u.phone, 'Phone');
+                copyText(u.phone, 'Phone', row);
             };
             row.querySelector('.password').onclick = (e) => {
                 e.stopPropagation();
-                copyText(u.password, 'Password');
+                copyText(u.password, 'Password', row);
             };
             frag.appendChild(row);
         }
