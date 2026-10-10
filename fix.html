@@ -487,6 +487,21 @@
   #opp-card .stat-label{margin-bottom:6px !important;}
   #opp-card .opp-score-ring{width:30px;height:30px;}
   #opp-card .opp-score-ring::before{inset:5px;}
+
+  /* ===== campaign photo ===== */
+  .campaign-card-top.has-photo{display:flex;align-items:flex-start;gap:10px;}
+  .campaign-card-top.has-photo .camp-text{flex:1;min-width:0;}
+  .campaign-card .has-photo .campaign-num{padding-left:0;}
+  .campaign-card .has-photo .campaign-status{margin-left:0;}
+  .camp-photo{position:relative;width:43px;height:43px;flex:0 0 43px;}
+  .camp-photo img{width:43px;height:43px;border-radius:9px;object-fit:cover;display:block;background:#e4e6ea;}
+  .camp-photo .pdot{position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;border:2px solid #fff;background:var(--green);}
+  .camp-photo .pdot.off{background:#9aa0a6;} .camp-photo .pdot.error{background:#b3121f;}
+  .photo-box{display:flex;align-items:center;gap:14px;}
+  .photo-thumb{width:64px;height:64px;border-radius:12px;background:#f0f2f5;border:1px dashed #c5cad0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#6b7782;overflow:hidden;flex:0 0 64px;cursor:pointer;}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;}
+  .photo-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+  .photo-actions .btn{padding:8px 16px;flex:0 0 auto;font-size:14px;}
 </style>
 </head>
 <body>
@@ -916,6 +931,14 @@
       <input id="cf-name" class="form-input" placeholder="e.g. New Leads Campaign">
     </div>
     <div class="form-error" id="cf-error">Please enter a campaign name.</div>
+    <div class="form-field">
+      <label class="form-label">Campaign photo</label>
+      <div class="photo-box">
+        <div class="photo-thumb" id="cf-photo-thumb" onclick="pickCampPhoto()">+</div>
+        <div class="photo-actions" id="cf-photo-actions"></div>
+      </div>
+      <input type="file" id="cf-photo-file" accept="image/*" style="display:none" onchange="onCampPhotoChosen(this)">
+    </div>
 
     <div class="form-field">
       <label class="form-label">Objective</label>
@@ -1599,9 +1622,10 @@
       ) : '';
       return (
         '<div class="card campaign-card">' +
-          '<div class="campaign-card-top" data-action="open-detail" data-id="'+c.id+'">' +
+          '<div class="campaign-card-top'+(c.photo ? ' has-photo' : '')+'" data-action="open-detail" data-id="'+c.id+'">' +
+            (c.photo ? '<div class="camp-photo"><img src="'+c.photo+'" alt=""><span class="pdot '+statusClass+'"></span></div>' : '') +
             '<div class="camp-text '+statusClass+'">'+errPill+'<div class="campaign-num">'+escapeHtml(c.name)+'</div>' +
-            '<div class="campaign-status '+statusClass+'">'+dotHtml+statusLabel+'</div></div>' +
+            '<div class="campaign-status '+statusClass+'">'+(c.photo ? '' : dotHtml)+statusLabel+'</div></div>' +
             '<button class="dots-btn" data-action="menu" data-id="'+c.id+'"><svg width="18" height="18"><use href="#ic-dots" xlink:href="#ic-dots"/></svg></button>' +
           '</div>' +
           '<div class="metrics-row" data-action="open-detail" data-id="'+c.id+'">' +
@@ -1671,7 +1695,9 @@
       ensureCampaignFields(c);
       setSegVal('cf-adsets-row', c.adSets.length >= 2 ? '2' : '1');
       setSegVal('cf-recovis-row', c.recoHidden ? 'hidden' : 'show');
+      cfPhoto = c.photo || null; renderCfPhoto();
     } else {
+      cfPhoto = null; renderCfPhoto();
       document.getElementById('campaign-form-title').textContent = 'Add campaign';
       ['cf-name','cf-subs','cf-cost','cf-spent','cf-reco','cf-budget','cf-reach','cf-impressions','cf-adsetname'].forEach(function(fid){
         document.getElementById(fid).value = '';
@@ -2546,8 +2572,9 @@ renderFunds();
     var _sc = saveCampaign;
     saveCampaign = function(){
       var hide = getSegVal('cf-recovis-row') === 'hidden';
-      var isNew = !editingCampaignId, id = editingCampaignId;
+      var isNew = !editingCampaignId, id = editingCampaignId, nA = campaigns.length;
       _sc();
+      if(isNew && campaigns.length === nA) return;
       var c = isNew ? campaigns[0] : campById(id);
       if(c){ c.recoHidden = hide; saveState('moc_campaigns_v3', campaigns); afterRecoChange(); }
     };
@@ -2587,8 +2614,9 @@ renderFunds();
   (function(){
     var _sc2 = saveCampaign;
     saveCampaign = function(){
-      var filled = autoFilledForm, wasNew = !editingCampaignId, id = editingCampaignId;
+      var filled = autoFilledForm, wasNew = !editingCampaignId, id = editingCampaignId, nB = campaigns.length;
       _sc2();
+      if(wasNew && campaigns.length === nB) return;
       autoFilledForm = false;
       var c = wasNew ? campaigns[0] : campById(id);
       if(filled && c && c.adSets && c.adSets.length){
@@ -2613,6 +2641,46 @@ renderFunds();
     closeAllSheets();
     if(dashReco.hidden) unhideReco('dash'); else { recoCtx = 'dash'; menuHideReco(); }
   }
+
+  /* ---------------- campaign photo (gallery) ---------------- */
+  var cfPhoto = null;
+  function renderCfPhoto(){
+    var th = document.getElementById('cf-photo-thumb'), ac = document.getElementById('cf-photo-actions');
+    if(cfPhoto){
+      th.innerHTML = '<img src="'+cfPhoto+'" alt="">';
+      ac.innerHTML = '<button type="button" class="btn btn-outline" onclick="pickCampPhoto()">Change photo</button><button type="button" class="btn btn-outline" onclick="removeCampPhoto()">Remove photo</button>';
+    } else {
+      th.textContent = '+';
+      ac.innerHTML = '<button type="button" class="btn btn-outline" onclick="pickCampPhoto()">+ Add photo</button>';
+    }
+  }
+  function pickCampPhoto(){ var f = document.getElementById('cf-photo-file'); f.value = ''; f.click(); }
+  function removeCampPhoto(){ cfPhoto = null; renderCfPhoto(); }
+  function onCampPhotoChosen(inp){
+    var file = inp.files && inp.files[0]; if(!file) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        var S = 160, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+        var m = Math.min(img.width, img.height), sx = (img.width - m) / 2, sy = (img.height - m) / 2;
+        cv.getContext('2d').drawImage(img, sx, sy, m, m, 0, 0, S, S);
+        cfPhoto = cv.toDataURL('image/jpeg', 0.82); renderCfPhoto();
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  (function(){
+    var _sc3 = saveCampaign;
+    saveCampaign = function(){
+      var photo = cfPhoto, wasNew = !editingCampaignId, id = editingCampaignId, n0 = campaigns.length;
+      _sc3();
+      if(wasNew && campaigns.length === n0) return;
+      var c = wasNew ? campaigns[0] : campById(id);
+      if(c){ if(photo) c.photo = photo; else delete c.photo; saveState('moc_campaigns_v3', campaigns); renderCampaigns(); }
+    };
+  })();
 </script>
 </body>
 </html>
