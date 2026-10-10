@@ -502,6 +502,11 @@
   .photo-thumb img{width:100%;height:100%;object-fit:cover;}
   .photo-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
   .photo-actions .btn{padding:8px 16px;flex:0 0 auto;font-size:14px;}
+
+  #screen-campaign-detail .detail-header.has-photo .detail-name{padding-left:0;}
+  #screen-campaign-detail .detail-header.has-photo .detail-header-mid{padding-left:10px;}
+  #screen-campaign-detail #cd-photo{margin-left:4px;}
+  .ins-ic img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;}
 </style>
 </head>
 <body>
@@ -640,6 +645,7 @@
       <div class="camp-chip"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1c1e21"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"/></svg> Campaign</div>
       <div class="detail-header" style="padding-top:8px">
         <button class="back-btn" onclick="goTo('screen-dashboard')"><svg width="22" height="22"><use href="#ic-chevron-left" xlink:href="#ic-chevron-left"/></svg></button>
+        <div class="camp-photo" id="cd-photo" style="display:none"></div>
         <div class="detail-header-mid">
           <div class="detail-name" id="cd-name">23</div>
           <div class="detail-status" id="cd-status"></div>
@@ -1874,6 +1880,18 @@
 
     document.getElementById('cd-name').textContent = c.name;
     var ic = isActive ? '<span class="on-ic"></span>' : '<span class="off-ic"></span>';
+    var phEl = document.getElementById('cd-photo'), hdr = phEl.parentNode;
+    var insIc = document.querySelector('#screen-campaign-detail .ins-ic');
+    if(!insIc._orig) insIc._orig = insIc.innerHTML;
+    if(c.photo){
+      var pcls = c.adError ? 'error' : (isActive ? '' : 'off');
+      phEl.style.display = ''; phEl.innerHTML = '<img src="'+c.photo+'" alt=""><span class="pdot '+pcls+'"></span>';
+      hdr.classList.add('has-photo'); ic = '';
+      insIc.innerHTML = '<img src="'+c.photo+'" alt="">';
+    } else {
+      phEl.style.display = 'none'; phEl.innerHTML = '';
+      hdr.classList.remove('has-photo'); insIc.innerHTML = insIc._orig;
+    }
     var txt = c.adError
       ? '<span style="color:#b3121f">Ad set error(s)</span> <span class="status-off-text">'+escapeHtml(obj)+'</span>'
       : (isActive
