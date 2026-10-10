@@ -479,6 +479,14 @@
   .auto-box{display:flex;gap:8px;align-items:stretch;margin-bottom:6px;}
   .auto-box .form-input{flex:1;min-width:0;}
   .auto-box .btn{flex:0 0 auto;padding:0 18px;}
+
+  /* ===== opportunity score card: no divider, compact (real look) ===== */
+  #opp-card .card-row + .card-row{border-top:none;}
+  #opp-card .clickable .card-row:first-child{padding:18px 16px 0;}
+  #opp-card .clickable .card-row:nth-child(2){padding:0 16px 18px;}
+  #opp-card .stat-label{margin-bottom:6px !important;}
+  #opp-card .opp-score-ring{width:30px;height:30px;}
+  #opp-card .opp-score-ring::before{inset:5px;}
 </style>
 </head>
 <body>
@@ -544,7 +552,7 @@
       <div class="filter-row">
         <div class="chip icon-only"><svg width="18" height="18"><use href="#ic-filter" xlink:href="#ic-filter"/></svg></div>
         <div class="chip" id="date-chip" onclick="openDateSheet()"><span id="date-chip-label">Date</span> <span class="spacer-caret"><svg width="14" height="14"><use href="#ic-caret-down" xlink:href="#ic-caret-down"/></svg></span></div>
-        <div class="chip">Status <span class="spacer-caret"><svg width="14" height="14"><use href="#ic-caret-down" xlink:href="#ic-caret-down"/></svg></span></div>
+        <div class="chip" onclick="openStatusMenu()">Status <span class="spacer-caret"><svg width="14" height="14"><use href="#ic-caret-down" xlink:href="#ic-caret-down"/></svg></span></div>
       </div>
     </div>
 
@@ -580,7 +588,7 @@
               <div class="opp-score-text"><span class="reco-num" id="opp-points">2</span> <span class="reco-label">points</span></div>
             </div>
             <div style="flex:1;text-align:right" onclick="if(dashReco.hidden){event.stopPropagation();unhideReco('dash');}">
-              <span class="reco-num" id="opp-reco-num">1</span> <span class="reco-label">recommendation</span><span class="reco-dot" id="opp-reco-dot">●</span>
+              <span class="reco-num" id="opp-reco-num">1</span> <span class="reco-label" id="opp-reco-label">recommendation</span><span class="reco-dot" id="opp-reco-dot">●</span>
             </div>
           </div>
         </div>
@@ -1167,6 +1175,16 @@
 </div>
 
 <!-- ======== SHEET: ad set menu ======== -->
+<div class="sheet-overlay" id="status-menu-overlay" onclick="if(event.target===this) closeAllSheets()">
+  <div class="action-sheet">
+    <div class="sheet-handle"></div>
+    <div class="menu-summary">Status</div>
+    <div class="option-row" onclick="statusToggleReco()">
+      <div class="option-label" id="status-reco-label">Unhide recommendation</div>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="reco-menu-overlay" onclick="if(event.target===this) closeAllSheets()">
   <div class="action-sheet">
     <div class="sheet-handle"></div>
@@ -1481,6 +1499,7 @@
     document.getElementById('opp-ring').style.background = 'conic-gradient(from 198deg, var(--blue) 0deg '+deg+'deg, #e4e6ea '+deg+'deg 360deg)';
     document.getElementById('opp-points').textContent = pct;
     document.getElementById('opp-reco-num').textContent = oppScore.recommendations;
+    document.getElementById('opp-reco-label').textContent = Number(oppScore.recommendations) === 1 ? 'recommendation' : 'recommendations';
     document.getElementById('opp-reco-dot').style.display = Number(oppScore.recommendations) > 0 ? 'inline' : 'none';
   }
   function openOppScoreForm(){
@@ -2221,7 +2240,7 @@
     document.getElementById('funds-sheet-overlay').classList.remove('open');
     document.getElementById('date-sheet-overlay').classList.remove('open');
     document.getElementById('daterange-sheet-overlay').classList.remove('open');
-    ['results-sheet-overlay','reco-menu-overlay','reco-form-overlay','adset-menu-overlay','adset-form-overlay','acctadd-menu-overlay','acct-menu-overlay','acct-form-overlay'].forEach(function(i){ document.getElementById(i).classList.remove('open'); });
+    ['results-sheet-overlay','status-menu-overlay','reco-menu-overlay','reco-form-overlay','adset-menu-overlay','adset-form-overlay','acctadd-menu-overlay','acct-menu-overlay','acct-form-overlay'].forEach(function(i){ document.getElementById(i).classList.remove('open'); });
   }
 
   /* ---------------- available funds (billing) ---------------- */
@@ -2584,6 +2603,16 @@ renderFunds();
       }
     };
   })();
+
+  function openStatusMenu(){
+    closeAllSheets();
+    document.getElementById('status-reco-label').textContent = dashReco.hidden ? 'Unhide recommendation' : 'Hide recommendation';
+    document.getElementById('status-menu-overlay').classList.add('open');
+  }
+  function statusToggleReco(){
+    closeAllSheets();
+    if(dashReco.hidden) unhideReco('dash'); else { recoCtx = 'dash'; menuHideReco(); }
+  }
 </script>
 </body>
 </html>
