@@ -507,6 +507,15 @@
   #screen-campaign-detail .detail-header.has-photo .detail-header-mid{padding-left:10px;}
   #screen-campaign-detail #cd-photo{margin-left:4px;}
   .ins-ic img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;}
+
+  /* ===== campaign card: vertical dividers ===== */
+  .campaign-card .metrics-row{gap:0;}
+  .campaign-card .metric-col{flex:1 1 0;min-width:0;padding-right:4px;}
+  .campaign-card .metric-col + .metric-col{border-left:1px solid #dadde1;padding-left:9px;}
+  /* ad thumbnails in recommendation */
+  .ad-thumbs{display:flex;align-items:center;gap:0;}
+  .ad-thumbs img{width:26px;height:26px;border-radius:5px;object-fit:cover;border:1.5px solid #fff;margin-right:-4px;background:#e4e6ea;}
+  .ad-thumbs-row{display:flex;align-items:center;gap:14px;font-size:15.5px;}
 </style>
 </head>
 <body>
@@ -1003,6 +1012,11 @@
         <label class="form-label">Recommendation points</label>
         <input id="cf-reco" type="number" inputmode="numeric" class="form-input" placeholder="0">
       </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">Recommendations count (card par "1 recommendation")</label>
+      <input id="cf-recocount" type="number" inputmode="numeric" class="form-input" placeholder="1">
     </div>
 
     <div class="form-field">
@@ -1617,11 +1631,11 @@
       var statusLabel = c.adError ? 'Ad set error(s) <span class="lead-grey">'+objL(c)+'</span>' : (c.status === 'active' ? 'Active '+objL(c) : 'Off '+objL(c));
       var dotHtml = c.adError ? '<span class="err-ic"></span>' : (c.status === 'active' ? '<span class="on-ic"></span>' : '<span class="off-ic"></span>');
       var errPill = c.adError ? '<div class="err-pill">'+WARN_SVG+'Ad set error(s)</div>' : '';
-      var recoHtml = (c.recoPoints && c.recoPoints > 0 && !c.recoHidden) ? (
+      var recoHtml = (c.recoPoints && c.recoPoints > 0) ? (
         '<div class="reco-strip">' +
           '<div class="reco-strip-left">' +
             '<span class="up-arrow"><svg width="16" height="16"><use href="#ic-up-arrow" xlink:href="#ic-up-arrow"/></svg></span>' +
-            '<div><div class="reco-strip-text">1 recommendation</div><div class="reco-strip-sub">+'+c.recoPoints+' points</div></div>' +
+            '<div><div class="reco-strip-text">'+(Number(c.recoCount||1)===1 ? '1 recommendation' : Number(c.recoCount)+' recommendations')+'</div><div class="reco-strip-sub">+'+c.recoPoints+' points</div></div>' +
           '</div>' +
           '<span class="chevron" style="color:var(--blue)"><svg width="18" height="18"><use href="#ic-chevron-right" xlink:href="#ic-chevron-right"/></svg></span>' +
         '</div>'
@@ -1702,8 +1716,10 @@
       setSegVal('cf-adsets-row', c.adSets.length >= 2 ? '2' : '1');
       setSegVal('cf-recovis-row', c.recoHidden ? 'hidden' : 'show');
       cfPhoto = c.photo || null; renderCfPhoto();
+      document.getElementById('cf-recocount').value = c.recoCount || 1;
     } else {
       cfPhoto = null; renderCfPhoto();
+      document.getElementById('cf-recocount').value = 1;
       document.getElementById('campaign-form-title').textContent = 'Add campaign';
       ['cf-name','cf-subs','cf-cost','cf-spent','cf-reco','cf-budget','cf-reach','cf-impressions','cf-adsetname'].forEach(function(fid){
         document.getElementById(fid).value = '';
@@ -2525,8 +2541,16 @@ renderFunds();
       '<div class="reco-outcome">Potential outcome: <b>'+escapeHtml(r.outcome)+'</b></div>' +
       '<div class="reco-based">Based on our experiment <span class="info-circle">i</span></div>' +
       '<hr class="hr-line">' +
-      '<div class="ad-name-row"><span class="checkbox-sq"></span> '+escapeHtml(r.adName)+'</div>' +
+      recoAdRow(r, ctx) +
       '<div class="btn-row"><button class="btn btn-outline">Preview</button><button class="btn btn-solid">Apply now</button></div>';
+  }
+  function recoAdRow(r, ctx){
+    var photos = ctx === 'dash' ? campaigns.filter(function(c){ return c.photo; }).map(function(c){ return c.photo; })
+                                : ((campById(ctx) || {}).photo ? [campById(ctx).photo] : []);
+    if(!photos.length) return '<div class="ad-name-row"><span class="checkbox-sq"></span> '+escapeHtml(r.adName)+'</div>';
+    var thumbs = photos.slice(0, 3).map(function(u){ return '<img src="'+u+'" alt="">'; }).join('');
+    var label = ctx === 'dash' ? (photos.length + (photos.length === 1 ? ' ad' : ' ads')) : escapeHtml(r.adName);
+    return '<div class="ad-name-row"><div class="ad-thumbs-row"><div class="ad-thumbs">'+thumbs+'</div><span>'+label+'</span></div></div>';
   }
   function renderDashReco(){
     var w = document.getElementById('opp-reco-wrap');
@@ -2692,11 +2716,11 @@ renderFunds();
   (function(){
     var _sc3 = saveCampaign;
     saveCampaign = function(){
-      var photo = cfPhoto, wasNew = !editingCampaignId, id = editingCampaignId, n0 = campaigns.length;
+      var photo = cfPhoto, rc = Math.max(1, Math.round(Number(document.getElementById('cf-recocount').value) || 1)), wasNew = !editingCampaignId, id = editingCampaignId, n0 = campaigns.length;
       _sc3();
       if(wasNew && campaigns.length === n0) return;
       var c = wasNew ? campaigns[0] : campById(id);
-      if(c){ if(photo) c.photo = photo; else delete c.photo; saveState('moc_campaigns_v3', campaigns); renderCampaigns(); }
+      if(c){ c.recoCount = rc; if(photo) c.photo = photo; else delete c.photo; saveState('moc_campaigns_v3', campaigns); renderCampaigns(); renderDashReco(); }
     };
   })();
 </script>
